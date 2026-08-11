@@ -101,19 +101,45 @@ Final Score = (0.50 × Skill Score)
 
 ####  Skill Score (50%)
 ```
-Skill Score = (# JD skills found in resume / # total JD skills) × 100
+coverage   = (# JD skills found in resume / # total JD skills) × 100
+semantic   = TF-IDF cosine similarity(resume, JD) × 100   # 0–100
+Skill Score = 0.85 × coverage + 0.15 × semantic
 ```
-Skills are extracted from the job description and matched against the resume using a large predefined skill database (100+ skills across categories: languages, frameworks, cloud, ML, databases, tools).
+Skills are extracted from the job description and resume using a predefined skill
+database **with alias canonicalization** — variants like `reactjs` / `react.js` / `react`,
+`postgres` / `postgresql`, `k8s` / `kubernetes`, and `ml` / `machine learning` all map to a
+single canonical skill, so a resume matches the JD even when the wording differs.
 
-####  Experience Score (25%)
+A lightweight **TF-IDF cosine similarity** (pure Python, no external libraries)
+between the full resume and the full job description is blended in. This rewards
+genuinely relevant resumes that use words outside the skill list, acts as a
+tiebreaker, and lets the system still rank candidates when a JD lists no
+detectable hard skills (in that case the skill component is 100% semantic).
+
+The skill database spans **280+ canonical skills** across software **and**
+non-technical roles — Civil & Construction (AutoCAD, STAAD Pro, RCC, BOQ,
+quantity surveying, QA/QC…), Sales & Business Development (B2B/B2C sales, lead
+generation, CRM, key account management…), Marketing & Digital Marketing (SEO,
+SEM, PPC, Google Ads, social media…), Design, and Business/Office — so the same
+engine ranks civil engineers, salespeople, and marketers, not just developers.
+
+####  Experience Score (25%) — relevance-weighted
 ```
 If required experience <= 0:
     Experience Score = min(resume_years / 15, 1.0) × 100
-
 If required experience > 0:
     Experience Score = min(resume_years / required_years, 1.0) × 100
+
+# Then scaled by role-fit so unrelated experience doesn't inflate the score:
+relevance      = Skill Score / 100
+Experience Score ×= 0.2 + 0.8 × relevance
 ```
-Experience in years is extracted using regex patterns like `"5 years"`, `"3+ yrs"`.
+Years of experience are estimated robustly: an explicit claim such as
+`"5+ years of experience"` is preferred; otherwise the system parses employment
+**date ranges** (`Jan 2019 – Present`, `2018 – 2022`, `06/2020 – 08/2023`) and
+sums them, merging overlapping periods so concurrent roles aren't double-counted.
+The relevance scaling ensures a genuinely-fitting junior outranks an unrelated
+senior (e.g. 7 years of sales experience won't win a civil-engineering role).
 
 ####  Education Score (10%)
 Degrees are mapped to relevance scores:
