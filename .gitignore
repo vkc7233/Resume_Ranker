@@ -3,3 +3,6 @@ __pycache__/
 .venv/
 venv/
 .streamlit/secrets.toml
+
+# Large local screen recordings — kept on disk, not in the repo
+*.mp4
