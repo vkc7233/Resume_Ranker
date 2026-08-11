@@ -6,6 +6,7 @@ Uses pdfplumber for PDFs, python-docx for DOCX, spaCy for NER, and regex utiliti
 
 import io
 import re
+import threading
 from typing import Optional
 
 # PDF parsing
@@ -26,14 +27,27 @@ try:
 except ImportError:
     DOCX_AVAILABLE = False
 
-# spaCy NER (optional — graceful fallback)
+# spaCy NER (optional — graceful fallback). We only use NER (name/location), so
+# disable the tagger/parser/lemmatizer pipes for a substantial speed-up on large
+# batches. Fall back to a full load if the trimmed load isn't supported.
 try:
     import spacy
-    nlp = spacy.load("en_core_web_sm")
+    try:
+        nlp = spacy.load(
+            "en_core_web_sm",
+            disable=["tagger", "parser", "attribute_ruler", "lemmatizer"],
+        )
+    except Exception:
+        nlp = spacy.load("en_core_web_sm")
     SPACY_AVAILABLE = True
 except Exception:
     SPACY_AVAILABLE = False
     nlp = None
+
+# A single spaCy pipeline object is NOT safe to call from multiple threads at
+# once (the resume batch is parsed concurrently). Serialize access with a lock —
+# the trimmed NER-only pipeline is fast, so this costs little.
+_NLP_LOCK = threading.Lock()
 
 from utils import (
     clean_text,
@@ -119,7 +133,8 @@ def extract_name(text: str) -> str:
     """
     if SPACY_AVAILABLE and nlp:
         # Process only the first 500 chars (name is almost always near top)
-        doc = nlp(text[:500])
+        with _NLP_LOCK:
+            doc = nlp(text[:500])
         for ent in doc.ents:
             if ent.label_ == "PERSON":
                 name = ent.text.strip()
@@ -137,7 +152,8 @@ def extract_location_from_resume(text: str) -> str:
     Extract location using spaCy GPE/LOC entities, then keyword fallback.
     """
     if SPACY_AVAILABLE and nlp:
-        doc = nlp(text[:1000])
+        with _NLP_LOCK:
+            doc = nlp(text[:1000])
         for ent in doc.ents:
             if ent.label_ in ("GPE", "LOC"):
                 location = ent.text.strip()
