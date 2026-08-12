@@ -64,8 +64,10 @@ st.markdown("""
             radial-gradient(1200px 400px at 10% -20%, rgba(56,189,248,0.25), transparent 60%),
             radial-gradient(900px 380px at 90% 120%, rgba(37,99,235,0.30), transparent 60%),
             linear-gradient(135deg, #0b1220 0%, #131c33 55%, #0d2547 100%);
-        padding: 2.6rem 3rem 2.4rem;
-        border-radius: 22px;
+        /* Fluid rather than fixed: 3rem of side padding is right on a desktop and
+           eats half a phone screen, and a breakpoint would jump between the two. */
+        padding: clamp(1.5rem, 3.4vw, 2.6rem) clamp(1.15rem, 4vw, 3rem) clamp(1.4rem, 3vw, 2.4rem);
+        border-radius: clamp(16px, 1.6vw, 22px);
         margin-bottom: 1.8rem;
         border: 1px solid rgba(255,255,255,0.10);
         box-shadow: 0 20px 50px -20px rgba(2,10,30,0.65);
@@ -103,8 +105,11 @@ st.markdown("""
     }
     .hero h1 {
         color: #f1f5f9;
-        font-size: 2.65rem; font-weight: 700;
-        margin: 0 0 0.6rem 0; line-height: 1.12;
+        font-size: clamp(1.68rem, 4.4vw, 2.65rem); font-weight: 700;
+        margin: 0 0 0.6rem 0; line-height: 1.14;
+        /* The headline contains a long gradient phrase; without this it can push the
+           hero wider than the screen on a 360px phone instead of breaking. */
+        overflow-wrap: break-word;
     }
     .hero .grad {
         background: linear-gradient(100deg, #38bdf8 10%, #818cf8 55%, #c084fc 100%);
@@ -112,14 +117,19 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
     }
     .hero p.sub {
-        color: #94a3b8; font-size: 1.03rem;
+        color: #94a3b8; font-size: clamp(0.9rem, 1.25vw, 1.03rem);
         margin: 0; max-width: 660px; line-height: 1.6;
     }
-    .hero-stats { display: flex; flex-wrap: wrap; gap: 2.4rem; margin-top: 1.7rem; }
+    /* Row gap is small and column gap large: once the four stats wrap onto separate
+       lines a 2.4rem vertical gap reads as four unrelated blocks. */
+    .hero-stats {
+        display: flex; flex-wrap: wrap;
+        gap: 1.1rem clamp(1.3rem, 3vw, 2.4rem); margin-top: clamp(1.1rem, 2vw, 1.7rem);
+    }
     .hstat b {
         display: block; color: #f8fafc;
         font-family: 'JetBrains Mono', monospace;
-        font-size: 1.5rem; font-weight: 600; line-height: 1.1;
+        font-size: clamp(1.2rem, 2.2vw, 1.5rem); font-weight: 600; line-height: 1.1;
     }
     .hstat span {
         color: #7c8ba1; font-size: 0.75rem;
@@ -394,6 +404,50 @@ st.markdown("""
     }
     @media (max-width: 1200px) {
         div[data-testid="stHorizontalBlock"]:has(.nav-marker) .stButton > button { font-size: 0.76rem !important; }
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) { padding: 0.4rem 0.45rem; }
+    }
+
+    /* Below ~1040px the ten nav items can no longer share one row without turning into
+       illegible slivers, so the bar is allowed to wrap. The `min-width: 0` above is what
+       was preventing that — it has to be lifted here, and a flex-basis given, or the
+       columns keep squeezing instead of moving to a second line. `order` pulls the brand
+       and the trial button onto the first row together so the tabs read as a clean grid
+       underneath rather than orphaning the CTA on a line of its own. */
+    @media (max-width: 1040px) {
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) {
+            flex-wrap: wrap; gap: 0.3rem !important; row-gap: 0.25rem !important;
+            align-items: stretch;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"] {
+            flex: 1 1 calc(25% - 1rem); min-width: 0; width: auto;
+        }
+        /* 58% + 40% leaves no room for a third item, so the first row is always exactly
+           brand + trial button. With `flex-basis: auto` here a tab squeezes onto the end
+           of row one and the nowrap brand slides underneath it. The button is capped so
+           it does not stretch into a slab on a 1000px window; the brand grows to absorb
+           whatever is left over. */
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:first-child {
+            order: -2; flex: 1 1 58%;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:last-child {
+            order: -1; flex: 0 1 40%; max-width: 240px;
+        }
+        .nav-brand-inline { padding: 0.2rem 0 0.2rem 0.2rem; }
+    }
+    @media (max-width: 680px) {
+        /* A wrapped bar is three or four rows tall — pinned to the top of a phone screen
+           that would eat a third of the viewport, so it scrolls away with the page. */
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) {
+            position: static; margin-bottom: 1rem;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"] {
+            flex: 1 1 calc(33.333% - 1rem);
+        }
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) .stButton > button {
+            font-size: 0.72rem !important; padding: 0.4rem 0.15rem !important;
+        }
+        .nav-brand-inline { font-size: 0.95rem; }
+        .nav-logo { width: 26px; height: 26px; font-size: 0.85rem; }
     }
     .anchor { display: block; height: 0; scroll-margin-top: 5rem; }
 
@@ -491,6 +545,26 @@ st.markdown("""
     .viz-dark h4 { color: #f1f5f9; margin: 0 0 0.2rem; font-size: 1.08rem; }
     .viz-dark .viz-sub { color: #94a3b8; }
     .viz-svg { width: 100%; height: auto; display: block; }
+    /* The pipeline diagram is six boxes across a 1180-unit viewBox. Scaled to fit a
+       phone it becomes a row of unreadable smudges, so below 780px it keeps a legible
+       size and the strip scrolls sideways instead. The same six stages are written out
+       in full on the "How it works" page, so nothing is lost if the swipe is missed. */
+    .viz-scroll { overflow-x: auto; }
+    .scroll-hint { display: none; }
+    @media (max-width: 780px) {
+        .viz-scroll { padding-bottom: 0.45rem; -webkit-overflow-scrolling: touch; }
+        .viz-scroll .viz-svg { min-width: 620px; }
+    }
+    /* The hint gets its own, narrower breakpoint. Between roughly 660px and 780px
+       the card is still wider than the 620px floor, so the diagram fits and there
+       is nothing to swipe — telling the reader to scroll a strip that does not
+       move is worse than saying nothing. */
+    @media (max-width: 660px) {
+        .scroll-hint {
+            display: block; margin-top: 0.15rem;
+            font-size: 0.72rem; color: #64748b; letter-spacing: 0.02em;
+        }
+    }
     .viz-legend { display: flex; gap: 1.3rem; flex-wrap: wrap; margin-top: 0.9rem; font-size: 0.78rem; color: var(--muted); }
     .viz-legend i { font-style: normal; display: inline-block; width: 22px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
 
@@ -700,9 +774,24 @@ st.markdown("""
     /* Audience split on the home page */
     .aud {
         border: 1px solid var(--line); border-radius: 16px; padding: 1.3rem 1.4rem;
-        background: #fff; min-height: 280px; margin-bottom: 0.8rem;
+        background: #fff; min-height: 280px;
+        box-sizing: border-box; height: 100%;
         transition: transform .18s, box-shadow .18s, border-color .18s;
     }
+    /* Each of the two audience cards has its own CTA button directly beneath it,
+       and the two cards do not hold the same amount of text. Left alone the
+       buttons land at different heights the moment the columns narrow enough for
+       the copy to rewrap. Streamlit already stretches the two columns to a common
+       height, so handing the slack to the card's own container (rather than
+       leaving it as a gap under the shorter one) lines the buttons back up. */
+    div[data-testid="stHorizontalBlock"]:has(.aud)
+        div[data-testid="stElementContainer"]:has(.aud) { flex: 1 1 auto; }
+    div[data-testid="stHorizontalBlock"]:has(.aud)
+        div[data-testid="stElementContainer"]:has(.aud) > div,
+    div[data-testid="stHorizontalBlock"]:has(.aud)
+        div[data-testid="stElementContainer"]:has(.aud) > div > div,
+    div[data-testid="stHorizontalBlock"]:has(.aud)
+        div[data-testid="stElementContainer"]:has(.aud) > div > div > div { height: 100%; }
     .aud-r { border-top: 3px solid #2563eb; }
     .aud-c { border-top: 3px solid #16a34a; }
     .aud:hover { transform: translateY(-3px); border-color: #bfdbfe; box-shadow: 0 18px 38px -24px rgba(15,23,42,0.4); }
@@ -766,7 +855,15 @@ st.markdown("""
 
     /* Pricing */
     .price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-    @media (max-width: 1000px) { .price-grid { grid-template-columns: 1fr; } }
+    /* Three plans, so 2-up leaves an orphan on the second row. Letting that
+       last card span both tracks keeps the block rectangular instead of
+       ending on a half-empty row. Dropping straight from 3-up to 1-up (which
+       is what this used to do) threw away half the width of every tablet. */
+    @media (max-width: 1000px) {
+        .price-grid { grid-template-columns: repeat(2, 1fr); }
+        .price-grid > .price-card:last-child { grid-column: 1 / -1; }
+    }
+    @media (max-width: 620px) { .price-grid { grid-template-columns: 1fr; } }
     .price-card { position: relative; border: 1px solid var(--line); border-radius: 18px; background: #fff; padding: 1.5rem 1.4rem; }
     .price-card.pop { border-color: #93c5fd; box-shadow: 0 18px 42px -28px rgba(37,99,235,0.9); }
     .price-tag {
@@ -787,7 +884,12 @@ st.markdown("""
 
     /* Contact */
     .contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-    @media (max-width: 1000px) { .contact-grid { grid-template-columns: 1fr; } }
+    /* Same three-card ladder as the pricing grid above. */
+    @media (max-width: 1000px) {
+        .contact-grid { grid-template-columns: repeat(2, 1fr); }
+        .contact-grid > .contact-card:last-child { grid-column: 1 / -1; }
+    }
+    @media (max-width: 620px) { .contact-grid { grid-template-columns: 1fr; } }
     .contact-card { border: 1px solid var(--line); border-radius: 16px; background: #fff; padding: 1.2rem 1.3rem; }
     .c-ico {
         width: 38px; height: 38px; border-radius: 11px; margin-bottom: 0.7rem;
@@ -796,6 +898,117 @@ st.markdown("""
     }
     .contact-card h4 { margin: 0 0 0.3rem; font-size: 0.97rem; color: var(--ink); }
     .contact-card p  { margin: 0; font-size: 0.84rem; color: var(--muted); line-height: 1.65; }
+
+    /* ══════════════════════════════════════════════════════════════
+       RESPONSIVE
+       Everything above is authored for a wide desktop. This is the one
+       place that re-fits it, ordered widest-first so narrower rules win
+       on equal specificity.
+
+       The important thing to know: st.columns does NOT reflow by itself
+       in Streamlit 1.58 — a four-column row stays four columns at 360px
+       and turns into unreadable slivers. Every st.columns row in the app
+       is therefore restacked by hand below, which is why the rules are
+       written against stHorizontalBlock rather than against each page.
+       ══════════════════════════════════════════════════════════════ */
+
+    /* Wide screens: keep the 1440px column off the window edge. */
+    @media (max-width: 1520px) {
+        .block-container { padding-left: 2rem; padding-right: 2rem; }
+    }
+
+    /* Small laptops and large tablets in landscape (1024-1100 class). */
+    @media (max-width: 1100px) {
+        .block-container { padding-left: 1.4rem; padding-right: 1.4rem; }
+        .site-footer { padding: 2rem 1.7rem 1.2rem; }
+        .cta-band { padding: 1.6rem 1.5rem 4.7rem; }
+        div[data-testid="stHorizontalBlock"]:has(.cta-btn-marker) { padding: 0 1.5rem; }
+        .viz-dark { padding: 1.3rem 1.4rem 1.4rem; }
+    }
+
+    /* Tablets in portrait, and the narrow end of the laptop range. Two-up
+       rather than one-up: an iPad has room for a pair of cards, and forcing
+       a single column here wastes half the screen. */
+    @media (max-width: 940px) {
+        .block-container { padding-top: 1.5rem; padding-left: 1.1rem; padding-right: 1.1rem; }
+        div[data-testid="stHorizontalBlock"]:not(:has(.nav-marker)) { flex-wrap: wrap; }
+        /* The 2rem slack is what the widest gap= a row uses ("large") costs.
+           Ask for a flat 50% and a large-gap row no longer fits two columns on
+           a line, so it silently drops to one-up and the tablet loses half its
+           width. flex-grow then takes the pair back out to the full row. */
+        div[data-testid="stHorizontalBlock"]:not(:has(.nav-marker)) > div[data-testid="stColumn"] {
+            flex: 1 1 calc(50% - 2rem); min-width: calc(50% - 2rem);
+        }
+        .foot-grid { gap: 1.5rem; }
+        .aud { min-height: 0; }
+        .dem { grid-template-columns: 118px 1fr 46px; gap: 0.55rem; }
+    }
+
+    /* Phones. Everything goes single column; the only things that stay side
+       by side are the nav tabs, which have their own rules further up. */
+    @media (max-width: 680px) {
+        .block-container { padding-top: 1rem; padding-left: 0.85rem; padding-right: 0.85rem; }
+
+        div[data-testid="stHorizontalBlock"]:not(:has(.nav-marker)) > div[data-testid="stColumn"] {
+            flex: 1 1 100%; min-width: 100%;
+        }
+
+        .section-title { margin: 1.4rem 0 0.8rem 0; }
+        .section-sub { margin-left: 0.95rem; }
+        .hero-badge { font-size: 0.7rem; line-height: 1.35; padding: 5px 11px; }
+        .hstat span { font-size: 0.68rem; letter-spacing: 0.5px; }
+
+        /* The footer's four link columns become two — one column would leave a
+           very long thin strip of links at the bottom of the page. */
+        .foot-grid { grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+        .foot-brand { grid-column: 1 / -1; }
+        .foot-brand p { max-width: none; }
+        .foot-bottom { margin-top: 1.2rem; font-size: 0.75rem; }
+        .foot-bottom a { margin-left: 0; margin-right: 0.9rem; }
+        .site-footer { padding: 1.6rem 1.2rem 1rem; border-radius: 16px; margin-top: 2rem; }
+
+        .trust { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+        .trust > div { padding: 0.8rem 0.6rem; }
+        .trust b { font-size: 1.2rem; }
+
+        .cta-band { padding: 1.4rem 1.15rem 5.2rem; border-radius: 16px; }
+        .cta-band h3 { font-size: 1.1rem; }
+        div[data-testid="stHorizontalBlock"]:has(.cta-btn-marker) { padding: 0 1.15rem; }
+
+        .viz-card, .viz-dark { padding: 1.1rem 1.1rem 1.2rem; }
+        .price-card { padding: 1.25rem 1.1rem; }
+        .plan-card, .contact-card, .role-card, .aud { padding: 1.1rem 1.1rem; }
+
+        /* A 150px label column on a 360px screen leaves no room for the bar
+           itself, so the skill name moves onto its own line. */
+        .dem { grid-template-columns: 1fr 44px; gap: 0.3rem 0.5rem; }
+        .dem-name { grid-column: 1 / -1; }
+
+        .efield { flex-wrap: wrap; gap: 0.15rem 0.6rem; }
+        .efield .ek { width: 100%; }
+        .efield .ok { margin-left: auto; }
+
+        /* Long addresses would otherwise push the chip past the screen edge. */
+        .acct { flex-wrap: wrap; row-gap: 0.4rem; }
+        .acct .who { word-break: break-word; }
+        .acct .pill { margin-left: 0; }
+
+        .mix-keys { gap: 0.35rem 0.8rem; }
+        .mix-key { font-size: 0.75rem; }
+
+        .calc-row, .calc-total { gap: 0.6rem; }
+        .calc-row span, .calc-total span { font-size: 0.79rem; }
+    }
+
+    /* Very small phones (iPhone SE and the 360px Android class). The two-column
+       footer and trust strip are deliberately kept — the cells hold a short number
+       and a caption, so one column just makes the page twice as long to scroll. */
+    @media (max-width: 400px) {
+        .block-container { padding-left: 0.65rem; padding-right: 0.65rem; }
+        .hero-stats { gap: 0.9rem 1.2rem; }
+        .foot-grid { gap: 1rem; }
+        .fcol a { font-size: 0.82rem; }
+    }
 
     /* Hide Streamlit default elements */
     #MainMenu, footer { visibility: hidden; }
@@ -1408,6 +1621,7 @@ if PAGE == "Home":
 <div class="viz-dark">
   <h4>🔬 The screening pipeline</h4>
   <p class="viz-sub">Six stages, run locally, in one pass over the whole batch.</p>
+  <div class="viz-scroll">
   <svg class="viz-svg" viewBox="0 0 1180 150" role="img" aria-label="Diagram of the six-stage screening pipeline">
     <defs>
       <marker id="rrArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -1445,6 +1659,8 @@ if PAGE == "Home":
         <text x="1077" y="103" text-anchor="middle" font-size="10.5" fill="#7c8ba1">shortlist · CSV</text></g>
     </g>
   </svg>
+  </div>
+  <span class="scroll-hint">Swipe to see all six stages →</span>
 </div>
 """, unsafe_allow_html=True)
 
