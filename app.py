@@ -79,10 +79,18 @@ st.markdown("""
             linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
         background-size: 46px 46px;
-        mask-image: radial-gradient(600px 260px at 25% 0%, #000 20%, transparent 75%);
+        /* Centred to match the content below it — the glow used to sit at 25%,
+           which was right when the headline was left-aligned. */
+        mask-image: radial-gradient(760px 300px at 50% 0%, #000 20%, transparent 75%);
         pointer-events: none;
     }
-    .hero-inner { position: relative; z-index: 2; }
+    /* Centred hero. The badge, headline, sub and stats are one stacked column, so
+       a single text-align does most of the work; the two flex/block children below
+       need their own centring because text-align does not reach them. */
+    .hero-inner {
+        position: relative; z-index: 2;
+        text-align: center;
+    }
     .hero-badge {
         display: inline-flex; align-items: center; gap: 7px;
         background: rgba(56,189,248,0.12);
@@ -118,14 +126,56 @@ st.markdown("""
     }
     .hero p.sub {
         color: #94a3b8; font-size: clamp(0.9rem, 1.25vw, 1.03rem);
-        margin: 0; max-width: 660px; line-height: 1.6;
+        /* auto side margins, not text-align: the 660px cap is what keeps the line
+           length readable, and without this the capped block would hug the left. */
+        margin: 0 auto; max-width: 660px; line-height: 1.6;
     }
     /* Row gap is small and column gap large: once the four stats wrap onto separate
        lines a 2.4rem vertical gap reads as four unrelated blocks. */
     .hero-stats {
-        display: flex; flex-wrap: wrap;
+        display: flex; flex-wrap: wrap; justify-content: center;
         gap: 1.1rem clamp(1.3rem, 3vw, 2.4rem); margin-top: clamp(1.1rem, 2vw, 1.7rem);
     }
+    /* Page-level call-to-action buttons, centred under centred content.
+
+       Hooked off Streamlit's st-key-* class rather than a marker span: a marker
+       needs its own element container inside the column, and the column's 16px flex
+       gap would then push that button lower than the one beside it.
+
+       Two shapes here — a pair sharing a row, and a lone button. Both used to sit in
+       a column split like [1.3, 3], which left them stretched across a hand-guessed
+       fraction of the page and anchored to the left. */
+    div[data-testid="stHorizontalBlock"]:has(.st-key-hero_cta),
+    div[data-testid="stHorizontalBlock"]:has(.st-key-price_try) {
+        justify-content: center; gap: 0.7rem;
+    }
+    /* Both levels need centring. Streamlit gives .stButton width:100%, so even as a
+       flex item it still spans the whole row and the shrunk button lands against that
+       row's left edge — centring the container on its own moved nothing. */
+    .st-key-home_bottom_cta, .st-key-how_cta, .st-key-faq_cta,
+    .st-key-home_bottom_cta .stButton, .st-key-how_cta .stButton,
+    .st-key-faq_cta .stButton {
+        display: flex; justify-content: center;
+    }
+    /* Above the 1-up restack the buttons size to their labels; below it they go full
+       width, which is what a thumb wants. */
+    @media (min-width: 681px) {
+        /* The matching column-width rule is NOT here — it has to sit after the
+           responsive restacks near the bottom of this stylesheet. See the note there. */
+        div[data-testid="stHorizontalBlock"]:has(.st-key-hero_cta) .stButton > button,
+        div[data-testid="stHorizontalBlock"]:has(.st-key-price_try) .stButton > button,
+        .st-key-home_bottom_cta .stButton > button,
+        .st-key-how_cta .stButton > button,
+        .st-key-faq_cta .stButton > button {
+            width: auto !important;
+            padding-left: 1.7rem !important; padding-right: 1.7rem !important;
+        }
+    }
+    .hero-note {
+        text-align: center; font-size: 0.8rem; color: var(--muted);
+        margin: 0.55rem 0 0.2rem 0;
+    }
+
     .hstat b {
         display: block; color: #f8fafc;
         font-family: 'JetBrains Mono', monospace;
@@ -311,6 +361,26 @@ st.markdown("""
         font-size: 0.83rem; color: var(--muted);
         margin: -0.6rem 0 1rem 0.95rem;
     }
+    /* Centred variant for the marketing pages, where the heading introduces a block
+       that is itself centred. The accent bar moves underneath and turns horizontal —
+       a vertical bar hanging off the left of centred text reads as a misalignment.
+
+       Deliberately NOT applied to the screening workflow: "1 · Job description",
+       "2 · Settings" and the results headings label a form that is scanned down its
+       left edge, and centring those would make the sequence harder to follow. */
+    .section-title.mid {
+        flex-direction: column; justify-content: center; text-align: center;
+        gap: 0.5rem;
+    }
+    .section-title.mid::before {
+        /* order pushes it past the heading text, which is an anonymous flex item at
+           the default order of 0. */
+        order: 2; width: 44px; height: 4px;
+        background: linear-gradient(90deg, var(--brand-2), var(--brand));
+    }
+    .section-sub.mid {
+        text-align: center; margin-left: auto; margin-right: auto; max-width: 680px;
+    }
 
     .formula-row {
         display: flex; align-items: center; justify-content: space-between;
@@ -350,11 +420,43 @@ st.markdown("""
 
     /* ── Top tab bar (real Streamlit buttons, styled as a nav) ── */
     [data-testid="stHeader"] { background: transparent; }
+    /* Streamlit's own toolbar is an invisible 60px strip across the full viewport at
+       z-index 999990. With the nav pinned beneath it, every click on the top half of
+       a tab was landing on that strip instead of the button, so the tabs stopped
+       responding once the page was scrolled.
+
+       The strip is made pass-through and the toolbar box is shrunk to the right-hand
+       corner it actually occupies. Confining the box rather than switching off
+       pointer events on its contents matters: Streamlit keeps the menu
+       visibility:hidden until the corner is hovered, and a strip that ignores the
+       pointer would never register that hover. */
+    [data-testid="stHeader"] { pointer-events: none; }
+    [data-testid="stToolbar"] {
+        pointer-events: auto;
+        width: 240px; min-width: 0; margin-left: auto;
+    }
+
     section[data-testid="stSidebar"] { display: none !important; }
     .nav-marker { display: none; }
 
-    /* The column row itself becomes the bar. Sticky works here because the parent
-       vertical block is the full page height. */
+    /* Streamlit wraps each block in an stLayoutWrapper, and a sticky box can never
+       travel outside its containing block. That wrapper is only as tall as the bar,
+       so sticky on the bar itself had nowhere to go and the header scrolled away
+       after about 24px. Hoisting the sticky to the wrapper — whose parent is the
+       full-height vertical block — is what actually pins it.
+
+       The bottom margin moves up here too. Left on the bar it would sit inside the
+       stuck region, leaving a transparent 24px band with page content sliding
+       through it just under the header. */
+    div[data-testid="stLayoutWrapper"]:has(.nav-marker) {
+        position: sticky; top: 0.2rem; z-index: 999;
+        margin-bottom: 1.5rem;
+    }
+    div[data-testid="stLayoutWrapper"]:has(.nav-marker)
+        > div[data-testid="stHorizontalBlock"] { margin-bottom: 0; }
+
+    /* The column row itself becomes the bar. Its own sticky is kept as a fallback
+       for Streamlit builds that do not emit the wrapper above. */
     div[data-testid="stHorizontalBlock"]:has(.nav-marker) {
         position: sticky; top: 0.2rem; z-index: 999;
         align-items: center;
@@ -389,10 +491,25 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"]:has(.nav-marker) .stButton > button:hover {
         background: var(--bg-soft) !important; color: var(--brand) !important;
     }
-    /* Active tab */
+    /* Active tab = coloured label with a rule under it, rather than a filled chip.
+       A filled chip reads as a button, so the bar looked like a row of buttons of
+       which one happened to be pressed. An underline marks position instead, which
+       leaves the solid pill at the end unambiguously the one thing to click. */
     div[data-testid="stHorizontalBlock"]:has(.nav-marker) .stButton > button[kind="primary"] {
-        background: #eff6ff !important; color: var(--brand) !important;
-        border-color: #bfdbfe !important; font-weight: 700 !important;
+        background: transparent !important; color: var(--brand) !important;
+        border-color: transparent !important; font-weight: 600 !important;
+        position: relative;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.nav-marker) .stButton > button[kind="primary"]:hover {
+        background: transparent !important;
+    }
+    /* :not(:last-child) keeps the underline off the CTA, which is a pill in both
+       states and would otherwise get a stripe across its bottom edge. */
+    div[data-testid="stHorizontalBlock"]:has(.nav-marker)
+        > div[data-testid="stColumn"]:not(:last-child) .stButton > button[kind="primary"]::after {
+        content: ""; position: absolute;
+        left: 0.85rem; right: 0.85rem; bottom: 0.14rem;
+        height: 2px; border-radius: 2px; background: var(--brand);
     }
     /* CTA keeps the solid pill in both states — it is the primary action, not a tab */
     div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:last-child .stButton > button,
@@ -401,6 +518,40 @@ st.markdown("""
         color: #fff !important; font-weight: 600 !important;
         border-color: transparent !important;
         box-shadow: 0 8px 18px -10px rgba(37,99,235,0.9) !important;
+    }
+
+    /* ── Wide screens: three zones, with the tab cluster centred ──────────
+       Scoped to min-width so it cannot collide with the wrapping rules
+       below, which take over once the bar no longer fits on one line.
+
+       Each tab column sizes to its own text instead of to a hand-guessed
+       ratio. Those ratios were what left the bar looking scattered: every
+       button stretched to fill its slot, so the spacing between tabs was
+       really the leftover width of each column, which is why there was a
+       hole after the brand and no breathing room before the call to action.
+
+       With the tabs at their natural width, the brand and CTA columns are
+       the only ones that grow. Both grow from a zero basis by the same
+       factor, so they always end up the same width and the tab cluster
+       lands in the true centre of the bar rather than wherever the ratios
+       happened to leave it. */
+    @media (min-width: 1041px) {
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) { gap: 0.28rem; }
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"] {
+            flex: 0 0 auto; width: auto;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:first-child,
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:last-child {
+            flex: 1 1 0; min-width: max-content;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) .stButton > button {
+            width: auto !important; padding: 0.5rem 1rem !important;
+        }
+        /* The CTA is the one element that stays pinned to the right edge. */
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker)
+            > div[data-testid="stColumn"]:last-child .stButton { display: flex; justify-content: flex-end; }
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker)
+            > div[data-testid="stColumn"]:last-child .stButton > button { padding: 0.46rem 1.2rem !important; }
     }
     @media (max-width: 1200px) {
         div[data-testid="stHorizontalBlock"]:has(.nav-marker) .stButton > button { font-size: 0.76rem !important; }
@@ -416,23 +567,43 @@ st.markdown("""
     @media (max-width: 1040px) {
         div[data-testid="stHorizontalBlock"]:has(.nav-marker) {
             flex-wrap: wrap; gap: 0.3rem !important; row-gap: 0.25rem !important;
-            align-items: stretch;
+            align-items: stretch; justify-content: center;
         }
+        /* Tabs size to their own labels rather than taking a fixed 25% each. On a
+           quarter-width basis the eight tabs were forced into a rigid 4-across grid
+           with the labels marooned in the middle of huge empty columns, and the active
+           underline — inset from the button edge — stretched right across the column.
+           Sized to content and centred, they read as one tight group. */
         div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"] {
-            flex: 1 1 calc(25% - 1rem); min-width: 0; width: auto;
+            flex: 0 1 auto; min-width: 0; width: auto;
         }
-        /* 58% + 40% leaves no room for a third item, so the first row is always exactly
-           brand + trial button. With `flex-basis: auto` here a tab squeezes onto the end
-           of row one and the nowrap brand slides underneath it. The button is capped so
-           it does not stretch into a slab on a 1000px window; the brand grows to absorb
-           whatever is left over. */
+        /* Row one is always exactly brand + trial button. Flex breaks lines on the
+           flex-basis, before any growing or capping, so the two bases are made to sum to
+           just under 100% and a third item can never fit.
+
+           The earlier 58% + 40% did not survive the tabs becoming content-width: the
+           button's 240px cap meant its real basis was well under 40%, and "Home" — no
+           longer a 25%-wide column — slipped into the slack beside it. Deriving the
+           brand's basis from the button's actual pixel width closes that gap for good. */
         div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:first-child {
-            order: -2; flex: 1 1 58%;
+            order: -2; flex: 1 1 calc(100% - 252px);
         }
         div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:last-child {
-            order: -1; flex: 0 1 40%; max-width: 240px;
+            order: -1; flex: 0 1 240px; max-width: 240px;
         }
         .nav-brand-inline { padding: 0.2rem 0 0.2rem 0.2rem; }
+        /* Content-width tabs need their own breathing room, since there is no longer a
+           25% column padding them out. */
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) .stButton > button {
+            padding: 0.44rem 0.7rem !important;
+        }
+        /* The desktop underline is inset 0.85rem to sit under a label in a roomy
+           button. Against these tighter buttons that inset would eat the rule from both
+           ends, so it is pulled in to clear the padding and still span the word. */
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker)
+            > div[data-testid="stColumn"]:not(:last-child) .stButton > button[kind="primary"]::after {
+            left: 0.35rem; right: 0.35rem;
+        }
     }
     @media (max-width: 680px) {
         /* A wrapped bar is three or four rows tall — pinned to the top of a phone screen
@@ -440,11 +611,23 @@ st.markdown("""
         div[data-testid="stHorizontalBlock"]:has(.nav-marker) {
             position: static; margin-bottom: 1rem;
         }
-        div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"] {
-            flex: 1 1 calc(33.333% - 1rem);
-        }
+        /* Horizontal padding stays above the 0.35rem underline inset used below, or the
+           active tab's rule would compute to a negative width and vanish. */
         div[data-testid="stHorizontalBlock"]:has(.nav-marker) .stButton > button {
-            font-size: 0.72rem !important; padding: 0.4rem 0.15rem !important;
+            font-size: 0.72rem !important; padding: 0.4rem 0.55rem !important;
+        }
+        /* A 240px trial button leaves a 390px screen only about 100px for the brand,
+           and the brand does not wrap — the wordmark simply ran underneath the button.
+           Both are re-cut for a phone: the button gets what its label needs and no
+           more, and the brand keeps the rest.
+
+           Still expressed as "the row minus the button" rather than two percentages,
+           so the two bases always sum to just under 100% and no tab can join them. */
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:first-child {
+            flex: 1 1 calc(100% - 158px);
+        }
+        div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:last-child {
+            flex: 0 1 146px; max-width: 146px;
         }
         .nav-brand-inline { font-size: 0.95rem; }
         .nav-logo { width: 26px; height: 26px; font-size: 0.85rem; }
@@ -1010,6 +1193,23 @@ st.markdown("""
         .fcol a { font-size: 0.82rem; }
     }
 
+    /* The two CTA pairs keep buttons sized to their labels, so the pair can sit
+       centred as a unit instead of each button being pinned to the left edge of its
+       own half of the row.
+
+       This has to come after the two restack blocks above, not next to the other
+       call-to-action rules near the top. All three selectors carry the same
+       specificity, so the last one in the file wins — and the first attempt at fixing
+       this instead added :not() exemptions to the tablet rule, which quietly lifted
+       that rule's specificity above the phone rule and left every card on the site
+       two-up at 390px. */
+    @media (min-width: 681px) {
+        div[data-testid="stHorizontalBlock"]:has(.st-key-hero_cta) > div[data-testid="stColumn"],
+        div[data-testid="stHorizontalBlock"]:has(.st-key-price_try) > div[data-testid="stColumn"] {
+            flex: 0 0 auto; width: auto; min-width: 0;
+        }
+    }
+
     /* Hide Streamlit default elements */
     #MainMenu, footer { visibility: hidden; }
     [data-testid="stAppDeployButton"] { display: none; }
@@ -1477,7 +1677,11 @@ SCORE_FORMULA_HTML = """
 if PAGE == "Home":
     st.markdown(HERO_HTML, unsafe_allow_html=True)
 
-    h1, h2, _sp = st.columns([1.15, 1.15, 3])
+    # Two real columns, no trailing spacer: the hero above is centred, so these are
+    # centred by CSS instead. A spacer column would have done it on a desktop, but
+    # the narrow-width restack gives every column its own row and an empty one
+    # leaves a gap under the buttons.
+    h1, h2 = st.columns(2, gap="small")
     with h1:
         if st.session_state.get("account"):
             st.button("🚀 Screen resumes now", key="hero_cta", use_container_width=True,
@@ -1489,14 +1693,19 @@ if PAGE == "Home":
         st.button("See how it works", key="hero_how", use_container_width=True,
                   on_click=go, args=("How it works",))
     if not st.session_state.get("account"):
-        st.caption(f"No card needed · unlocks the full {MAX_BATCH}-CV batch · "
-                   "nothing leaves this machine")
+        # st.caption would render left-aligned under a centred hero; a plain div is
+        # the only way to bring it onto the same axis.
+        st.markdown(
+            f'<div class="hero-note">No card needed · unlocks the full {MAX_BATCH}-CV '
+            'batch · nothing leaves this machine</div>',
+            unsafe_allow_html=True,
+        )
 
     # ── Audience split — the two sides of the same engine
-    st.markdown('<div class="section-title">Which side of the desk are you on?</div>',
+    st.markdown('<div class="section-title mid">Which side of the desk are you on?</div>',
                 unsafe_allow_html=True)
     st.markdown(
-        '<div class="section-sub">The same scoring engine, pointed in two directions — '
+        '<div class="section-sub mid">The same scoring engine, pointed in two directions — '
         'one shortlist for the person hiring, one honest report for the person applying.</div>',
         unsafe_allow_html=True,
     )
@@ -1541,9 +1750,9 @@ if PAGE == "Home":
                   on_click=go, args=(CAND_TAB,))
 
     # ── Illustration 1: what the scanner sees
-    st.markdown('<div class="section-title">Inside the scan</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title mid">Inside the scan</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="section-sub">Every page is read line by line, then the fields that '
+        '<div class="section-sub mid">Every page is read line by line, then the fields that '
         'matter for hiring are lifted out — no manual data entry.</div>',
         unsafe_allow_html=True,
     )
@@ -1615,7 +1824,7 @@ if PAGE == "Home":
 """, unsafe_allow_html=True)
 
     # ── Illustration 2: the pipeline
-    st.markdown('<div class="section-title">From a folder of CVs to a ranked shortlist</div>',
+    st.markdown('<div class="section-title mid">From a folder of CVs to a ranked shortlist</div>',
                 unsafe_allow_html=True)
     st.markdown("""
 <div class="viz-dark">
@@ -1665,7 +1874,7 @@ if PAGE == "Home":
 """, unsafe_allow_html=True)
 
     # ── Illustration 3 + 4: matching and the shortlist
-    st.markdown('<div class="section-title">How a candidate is scored</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title mid">How a candidate is scored</div>', unsafe_allow_html=True)
     st.markdown("""
 <div class="viz-grid">
   <div class="viz-card">
@@ -1739,7 +1948,7 @@ if PAGE == "Home":
 """, unsafe_allow_html=True)
 
     # ── The steps, spelled out
-    st.markdown('<div class="section-title">The steps we run on every resume</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title mid">The steps we run on every resume</div>', unsafe_allow_html=True)
     st.markdown("""
 <div class="proc-grid">
   <div class="proc" data-n="01"><h4>📤 Collect</h4>
@@ -1757,7 +1966,7 @@ if PAGE == "Home":
 </div>
 """, unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">Built for real hiring desks</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title mid">Built for real hiring desks</div>', unsafe_allow_html=True)
     st.markdown("""
 <div class="trust">
   <div><b>100%</b><span>Runs offline</span></div>
@@ -1774,7 +1983,10 @@ if PAGE == "Home":
      Nothing is uploaded anywhere — it all runs right here on this machine.</p>
 </div>
 """, unsafe_allow_html=True)
-    b1, _b2 = st.columns([1.3, 3])
+    # One full-width column rather than a [1.3, 3] split: the marker still gives the
+    # CSS its hook to lift the row into the band above, and the button is centred
+    # inside it instead of being pinned to the left third.
+    b1 = st.columns(1)[0]
     with b1:
         st.markdown('<span class="cta-btn-marker"></span>', unsafe_allow_html=True)
         st.button("🚀 Start screening", key="home_bottom_cta", use_container_width=True,
@@ -2458,11 +2670,11 @@ elif PAGE == CTA_TAB and not SIGNUP_GATE:
 if PAGE == "How it works":
     st.markdown(
         '<span class="anchor" id="how-it-works"></span>'
-        '<div class="section-title">How it works</div>',
+        '<div class="section-title mid">How it works</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="section-sub">Three steps, about a minute — no setup, no accounts, no cloud uploads.</div>',
+        '<div class="section-sub mid">Three steps, about a minute — no setup, no accounts, no cloud uploads.</div>',
         unsafe_allow_html=True,
     )
     st.markdown("""
@@ -2488,7 +2700,7 @@ if PAGE == "How it works":
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">What happens to each file</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title mid">What happens to each file</div>', unsafe_allow_html=True)
     st.markdown("""
 <div class="viz-dark">
   <h4>🔬 Inside one resume</h4>
@@ -2504,7 +2716,7 @@ if PAGE == "How it works":
 </div>
 """, unsafe_allow_html=True)
 
-    st.markdown('<div class="section-title">How the number is reached</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title mid">How the number is reached</div>', unsafe_allow_html=True)
     ex_a, ex_b = st.columns([1, 1.25])
     with ex_a:
         with st.container(border=True):
@@ -2528,10 +2740,9 @@ if PAGE == "How it works":
 </div>
 """, unsafe_allow_html=True)
 
-    hw_a, _hw_b = st.columns([1.3, 3])
-    with hw_a:
-        st.button("🚀 Try it on your CVs", key="how_cta", use_container_width=True,
-                  type="primary", on_click=go, args=(CTA_TAB,))
+    # No column split — a lone button centres itself via .st-key-how_cta.
+    st.button("🚀 Try it on your CVs", key="how_cta", use_container_width=True,
+              type="primary", on_click=go, args=(CTA_TAB,))
 
 
 # ─────────────────────────────────────────────
@@ -2541,7 +2752,7 @@ if PAGE == "How it works":
 if PAGE == "Features":
     st.markdown(
         '<span class="anchor" id="features"></span>'
-        '<div class="section-title">Why teams use it</div>',
+        '<div class="section-title mid">Why teams use it</div>',
         unsafe_allow_html=True,
     )
     st.markdown("""
@@ -2593,11 +2804,11 @@ if PAGE == "Features":
 if PAGE == "Roles":
     st.markdown(
         '<span class="anchor" id="roles"></span>'
-        '<div class="section-title">Roles we cover</div>',
+        '<div class="section-title mid">Roles we cover</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="section-sub">The skill database spans the whole company, not just the tech team — '
+        '<div class="section-sub mid">The skill database spans the whole company, not just the tech team — '
         'the same shortlist works for a site engineer and a sales manager.</div>',
         unsafe_allow_html=True,
     )
@@ -2659,7 +2870,7 @@ if PAGE == "Roles":
 if PAGE == "FAQ":
     st.markdown(
         '<span class="anchor" id="faq"></span>'
-        '<div class="section-title">Frequently asked</div>',
+        '<div class="section-title mid">Frequently asked</div>',
         unsafe_allow_html=True,
     )
     st.markdown("""
@@ -2702,10 +2913,8 @@ if PAGE == "FAQ":
     """, unsafe_allow_html=True)
 
     st.markdown("")
-    fq1, _fq2 = st.columns([1.3, 3])
-    with fq1:
-        st.button("🚀 Try it on real CVs", key="faq_cta", use_container_width=True,
-                  type="primary", on_click=go, args=(CTA_TAB,))
+    st.button("🚀 Try it on real CVs", key="faq_cta", use_container_width=True,
+              type="primary", on_click=go, args=(CTA_TAB,))
 
 
 # ─────────────────────────────────────────────
@@ -2715,11 +2924,11 @@ if PAGE == "FAQ":
 if PAGE == "Pricing":
     st.markdown(
         '<span class="anchor" id="pricing"></span>'
-        '<div class="section-title">Pricing</div>',
+        '<div class="section-title mid">Pricing</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="section-sub">One tool, installed on your own machines. No per-resume charges '
+        '<div class="section-sub mid">One tool, installed on your own machines. No per-resume charges '
         'and no candidate data held by anyone else.</div>',
         unsafe_allow_html=True,
     )
@@ -2767,11 +2976,14 @@ if PAGE == "Pricing":
   </div>
 </div>
 """, unsafe_allow_html=True)
-    st.caption(
-        "Figures shown are placeholders — set your actual plans and prices in `app.py` "
-        "before sharing this page with customers."
+    st.markdown(
+        '<div class="hero-note">Figures shown are placeholders — set your actual plans '
+        'and prices in <code>app.py</code> before sharing this page with customers.</div>',
+        unsafe_allow_html=True,
     )
-    pc1, pc2, _pc3 = st.columns([1.3, 1.3, 2])
+    # Two equal columns, no trailing spacer: the pair is centred by CSS instead, so
+    # a spacer would only push the visual centre off by its own width.
+    pc1, pc2 = st.columns(2, gap="small")
     with pc1:
         if st.session_state.get("account"):
             st.button("🚀 Start screening", key="price_try", use_container_width=True,
@@ -2791,11 +3003,11 @@ if PAGE == "Pricing":
 if PAGE == "Contact":
     st.markdown(
         '<span class="anchor" id="contact-top"></span>'
-        '<div class="section-title">Contact</div>',
+        '<div class="section-title mid">Contact</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="section-sub">Questions about scoring, a role type we do not cover yet, '
+        '<div class="section-sub mid">Questions about scoring, a role type we do not cover yet, '
         'or an installation on your office machines — send it across.</div>',
         unsafe_allow_html=True,
     )
