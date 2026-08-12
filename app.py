@@ -36,15 +36,24 @@ st.set_page_config(
 st.markdown("""
 <style>
     /* Import fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap');
 
+    /* Violet, not blue. Every applicant-tracking tool on the market ships the same
+       default blue, so a blue product reads as a template before a recruiter has
+       read a word of it. The full ramp is declared here rather than left as loose
+       hexes so a future palette change is one edit, not seventy. */
     :root {
-        --brand:      #2563eb;
-        --brand-2:    #38bdf8;
+        --brand:      #7c3aed;  /* primary            */
+        --brand-deep: #5b21b6;  /* gradient end, deep */
+        --brand-ink:  #6d28d9;  /* text on tints      */
+        --brand-2:    #a78bfa;  /* light accent       */
+        --brand-tint: #f5f3ff;  /* chip / panel fill  */
+        --brand-line: #ddd6fe;  /* chip / panel edge  */
         --ink:        #0f172a;
         --muted:      #64748b;
         --line:       #e2e8f0;
         --bg-soft:    #f8fafc;
+        --radius-pill: 999px;
     }
 
     html, body, [class*="css"] {
@@ -54,16 +63,19 @@ st.markdown("""
         font-family: 'Space Grotesk', sans-serif;
         letter-spacing: -0.4px;
     }
-    .block-container { padding-top: 2.2rem; max-width: 1440px; }
+    /* 1440 was too wide to feel designed — text ran to near-full-screen line lengths
+       and the page read as a dashboard stretched to fit. 1200 is the width the
+       marketing sites in this category settle on, and it leaves real gutters. */
+    .block-container { padding-top: 0; max-width: 1200px; }
 
     /* ── HERO ───────────────────────────────── */
     .hero {
         position: relative;
         overflow: hidden;
         background:
-            radial-gradient(1200px 400px at 10% -20%, rgba(56,189,248,0.25), transparent 60%),
-            radial-gradient(900px 380px at 90% 120%, rgba(37,99,235,0.30), transparent 60%),
-            linear-gradient(135deg, #0b1220 0%, #131c33 55%, #0d2547 100%);
+            radial-gradient(1200px 400px at 10% -20%, rgba(167,139,250,0.25), transparent 60%),
+            radial-gradient(900px 380px at 90% 120%, rgba(124,58,237,0.30), transparent 60%),
+            linear-gradient(135deg, #150b26 0%, #231041 55%, #2e1259 100%);
         /* Fluid rather than fixed: 3rem of side padding is right on a desktop and
            eats half a phone screen, and a breakpoint would jump between the two. */
         padding: clamp(1.5rem, 3.4vw, 2.6rem) clamp(1.15rem, 4vw, 3rem) clamp(1.4rem, 3vw, 2.4rem);
@@ -93,9 +105,9 @@ st.markdown("""
     }
     .hero-badge {
         display: inline-flex; align-items: center; gap: 7px;
-        background: rgba(56,189,248,0.12);
-        border: 1px solid rgba(56,189,248,0.35);
-        color: #7dd3fc;
+        background: rgba(167,139,250,0.12);
+        border: 1px solid rgba(167,139,250,0.35);
+        color: #c4b5fd;
         font-size: 0.76rem; font-weight: 600;
         letter-spacing: 0.3px;
         padding: 5px 13px; border-radius: 999px;
@@ -112,23 +124,29 @@ st.markdown("""
         100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
     }
     .hero h1 {
-        color: #f1f5f9;
-        font-size: clamp(1.68rem, 4.4vw, 2.65rem); font-weight: 700;
-        margin: 0 0 0.6rem 0; line-height: 1.14;
+        color: #f8fafc;
+        /* Display serif, sized up hard. The headline is the one piece of type a
+           visitor actually reads before deciding whether this is a serious product,
+           and at 2.65rem in the UI sans it was competing with the nav rather than
+           dominating the screen. */
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: clamp(2rem, 5.4vw, 3.5rem); font-weight: 600;
+        letter-spacing: -1px; text-wrap: balance;
+        margin: 0 auto 0.9rem auto; line-height: 1.1; max-width: 19ch;
         /* The headline contains a long gradient phrase; without this it can push the
            hero wider than the screen on a 360px phone instead of breaking. */
         overflow-wrap: break-word;
     }
     .hero .grad {
-        background: linear-gradient(100deg, #38bdf8 10%, #818cf8 55%, #c084fc 100%);
+        background: linear-gradient(100deg, #a78bfa 10%, #818cf8 55%, #c084fc 100%);
         -webkit-background-clip: text; background-clip: text;
         -webkit-text-fill-color: transparent;
     }
     .hero p.sub {
-        color: #94a3b8; font-size: clamp(0.9rem, 1.25vw, 1.03rem);
-        /* auto side margins, not text-align: the 660px cap is what keeps the line
+        color: #cbd5e1; font-size: clamp(0.98rem, 1.35vw, 1.14rem);
+        /* auto side margins, not text-align: the 640px cap is what keeps the line
            length readable, and without this the capped block would hug the left. */
-        margin: 0 auto; max-width: 660px; line-height: 1.6;
+        margin: 0 auto; max-width: 640px; line-height: 1.62;
     }
     /* Row gap is small and column gap large: once the four stats wrap onto separate
        lines a 2.4rem vertical gap reads as four unrelated blocks. */
@@ -198,10 +216,10 @@ st.markdown("""
     .step-num {
         position: absolute; top: -11px; left: 1.25rem;
         width: 26px; height: 26px; border-radius: 8px;
-        background: linear-gradient(135deg, var(--brand) 0%, #1e40af 100%);
+        background: linear-gradient(135deg, var(--brand) 0%, #5b21b6 100%);
         color: #fff; font-size: 0.8rem; font-weight: 700;
         display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 4px 10px -3px rgba(37,99,235,0.6);
+        box-shadow: 0 4px 10px -3px rgba(124,58,237,0.6);
     }
     .step h4 { margin: 0.5rem 0 0.3rem; font-size: 1rem; color: var(--ink); }
     .step p  { margin: 0; font-size: 0.83rem; color: var(--muted); line-height: 1.55; }
@@ -216,15 +234,15 @@ st.markdown("""
         transition: border-color .18s, transform .18s, box-shadow .18s;
     }
     .feat:hover {
-        border-color: #bfdbfe; transform: translateY(-3px);
-        box-shadow: 0 12px 26px -16px rgba(37,99,235,0.55);
+        border-color: #ddd6fe; transform: translateY(-3px);
+        box-shadow: 0 12px 26px -16px rgba(124,58,237,0.55);
     }
     .feat-ico {
         width: 38px; height: 38px; border-radius: 11px;
         display: flex; align-items: center; justify-content: center;
         font-size: 1.1rem; margin-bottom: 0.7rem;
-        background: linear-gradient(135deg, #eff6ff, #dbeafe);
-        border: 1px solid #bfdbfe;
+        background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+        border: 1px solid #ddd6fe;
     }
     .feat h4 { margin: 0 0 0.28rem; font-size: 0.97rem; color: var(--ink); }
     .feat p  { margin: 0; font-size: 0.82rem; color: var(--muted); line-height: 1.55; }
@@ -251,12 +269,12 @@ st.markdown("""
 
     /* ── UPLOADER ───────────────────────────── */
     section[data-testid="stFileUploaderDropzone"] {
-        background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
-        border: 2px dashed #93c5fd; border-radius: 14px;
+        background: linear-gradient(180deg, #faf8ff 0%, #f5f3ff 100%);
+        border: 2px dashed #c4b5fd; border-radius: 14px;
         transition: border-color .18s, background .18s;
     }
     section[data-testid="stFileUploaderDropzone"]:hover {
-        border-color: var(--brand); background: #eaf2ff;
+        border-color: var(--brand); background: #f5f3ff;
     }
 
     /* ── EXPANDERS (candidate cards) ────────── */
@@ -266,7 +284,7 @@ st.markdown("""
         margin-bottom: 0.6rem; overflow: hidden;
     }
     div[data-testid="stExpander"] summary { font-weight: 600; padding: 0.15rem 0.25rem; }
-    div[data-testid="stExpander"] details:hover { border-color: #bfdbfe; }
+    div[data-testid="stExpander"] details:hover { border-color: #ddd6fe; }
 
     /* Score badge */
     .score-badge {
@@ -315,9 +333,9 @@ st.markdown("""
     /* Skill chips */
     .skill-chip {
         display: inline-block;
-        background: #eff6ff;
-        color: #1d4ed8;
-        border: 1px solid #bfdbfe;
+        background: #f5f3ff;
+        color: #6d28d9;
+        border: 1px solid #ddd6fe;
         border-radius: 6px;
         padding: 2px 10px;
         font-size: 0.75rem;
@@ -344,22 +362,22 @@ st.markdown("""
         letter-spacing: 0.5px;
     }
 
-    /* Section headings */
+    /* Section headings.
+       The little vertical accent bar that used to sit before every title was doing
+       real damage: repeated down a page it reads as a settings screen, and it forced
+       a 0.95rem indent on every sub-line to stay aligned with it. Dropping it lets
+       headings start at the true content edge and lets the type do the work. */
     .section-title {
         font-family: 'Space Grotesk', sans-serif;
-        font-size: 1.12rem;
+        font-size: 1.5rem;
         font-weight: 700;
+        letter-spacing: -0.6px;
         color: var(--ink);
-        display: flex; align-items: center; gap: 0.6rem;
-        margin: 1.8rem 0 1rem 0;
-    }
-    .section-title::before {
-        content: ""; width: 4px; height: 20px; border-radius: 3px;
-        background: linear-gradient(180deg, var(--brand-2), var(--brand));
+        margin: 2.6rem 0 0.5rem 0;
     }
     .section-sub {
-        font-size: 0.83rem; color: var(--muted);
-        margin: -0.6rem 0 1rem 0.95rem;
+        font-size: 0.95rem; color: var(--muted);
+        margin: 0 0 1.4rem 0; line-height: 1.55;
     }
     /* Centred variant for the marketing pages, where the heading introduces a block
        that is itself centred. The accent bar moves underneath and turns horizontal —
@@ -369,17 +387,39 @@ st.markdown("""
        "2 · Settings" and the results headings label a form that is scanned down its
        left edge, and centring those would make the sequence harder to follow. */
     .section-title.mid {
-        flex-direction: column; justify-content: center; text-align: center;
-        gap: 0.5rem;
-    }
-    .section-title.mid::before {
-        /* order pushes it past the heading text, which is an anonymous flex item at
-           the default order of 0. */
-        order: 2; width: 44px; height: 4px;
-        background: linear-gradient(90deg, var(--brand-2), var(--brand));
+        text-align: center;
+        /* A display serif, only on the marketing headings. This is the single
+           biggest reason a competitor page reads as "product" and ours read as
+           "dashboard": everything of ours was set in the same UI sans, so nothing
+           carried any voice. The serif is deliberately kept off the workflow
+           headings below, where it would slow scanning down. */
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: clamp(1.85rem, 3.4vw, 2.7rem);
+        font-weight: 600; letter-spacing: -0.8px; line-height: 1.16;
+        /* balance evens the two lines instead of filling the first and orphaning a
+           couple of words onto the second ("...to a / ranked shortlist"). The ch cap
+           is generous so it only kicks in for genuinely long headings. */
+        text-wrap: balance;
+        margin: 3.4rem auto 0.7rem auto; max-width: 26ch;
     }
     .section-sub.mid {
-        text-align: center; margin-left: auto; margin-right: auto; max-width: 680px;
+        text-align: center; margin-left: auto; margin-right: auto;
+        max-width: 620px; font-size: 1.02rem; margin-bottom: 2.2rem;
+    }
+    /* Page-opening title: centred like the marketing headings, but without the
+       2.6rem top margin that is there to separate one mid-page section from the
+       previous one. Directly under a sticky bar that margin is just a hole. */
+    .section-title.page {
+        text-align: center;
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: clamp(1.9rem, 3.2vw, 2.5rem);
+        font-weight: 600; letter-spacing: -0.7px; line-height: 1.14;
+        text-wrap: balance;
+        margin: 0.4rem auto 0.6rem auto; max-width: 22ch;
+    }
+    .section-sub.page {
+        text-align: center; margin: 0 auto 1.8rem auto;
+        max-width: 600px; font-size: 1rem;
     }
 
     .formula-row {
@@ -391,32 +431,108 @@ st.markdown("""
     /* Dataframe tweaks */
     .stDataFrame { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
 
-    /* Buttons */
+    /* Inputs. Streamlit's default is a flat grey fill with no border, which is what
+       made the job-description box read as a disabled textarea sitting in a form.
+       White on a hairline, with the brand colour only on focus, matches the cards
+       around it and makes it obvious the field is live. */
+    .stTextArea textarea,
+    .stTextInput input,
+    div[data-baseweb="input"], div[data-baseweb="textarea"] {
+        background: #fff !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 14px !important;
+        color: var(--ink) !important;
+        transition: border-color .16s, box-shadow .16s;
+    }
+    .stTextArea textarea { padding: 0.9rem 1rem !important; line-height: 1.6; }
+    .stTextArea textarea:focus,
+    .stTextInput input:focus,
+    div[data-baseweb="input"]:focus-within, div[data-baseweb="textarea"]:focus-within {
+        border-color: var(--brand) !important;
+        box-shadow: 0 0 0 3px rgba(124,58,237,0.14) !important;
+    }
+    /* baseweb nests a second bordered wrapper inside; left alone it draws a
+       double outline once the outer one above is given a border. */
+    div[data-baseweb="input"] > div, div[data-baseweb="textarea"] > div {
+        background: transparent !important; border: none !important;
+    }
+    .stTextArea textarea::placeholder, .stTextInput input::placeholder {
+        color: #94a3b8 !important;
+    }
+
+    /* st.info renders a blue-tinted bar. One stray blue element on a violet page
+       reads as a leftover, so the neutral notices are pulled onto the brand and
+       given the same 16px radius as the cards around them. Warnings and errors are
+       deliberately left alone — those need to stay red and amber to carry meaning. */
+    div[data-testid="stAlertContainer"] {
+        border-radius: 16px !important;
+        border: 1px solid var(--brand-line) !important;
+        background: var(--brand-tint) !important;
+        color: #4c3d75 !important;
+    }
+    div[data-testid="stAlertContainer"] b,
+    div[data-testid="stAlertContainer"] strong { color: var(--brand-deep) !important; }
+
+    /* The uploader dropzone gets the same treatment: a dashed brand-tinted target
+       rather than the default grey slab. */
+    [data-testid="stFileUploaderDropzone"] {
+        background: var(--brand-tint) !important;
+        border: 1.5px dashed var(--brand-line) !important;
+        border-radius: 16px !important;
+        transition: border-color .16s, background .16s;
+    }
+    [data-testid="stFileUploaderDropzone"]:hover {
+        border-color: var(--brand) !important; background: #efeaff !important;
+    }
+    /* Streamlit renders its own "Browse files" button inside the dropzone and it
+       does not inherit the .stButton rules — it was the last control on the
+       screening page still wearing default 8px grey chrome. */
+    [data-testid="stFileUploaderDropzone"] button {
+        background: #fff !important;
+        border: 1px solid var(--brand-line) !important;
+        border-radius: var(--radius-pill) !important;
+        color: var(--brand-deep) !important;
+        font-weight: 600 !important;
+        padding: 0.42rem 1.1rem !important;
+    }
+    [data-testid="stFileUploaderDropzone"] button:hover {
+        background: var(--brand) !important;
+        border-color: var(--brand) !important;
+        color: #fff !important;
+    }
+
+    /* Buttons. Fully rounded and flat rather than 10px with a gradient — a gradient
+       on a small control just muddies the brand colour, and the softer radius was
+       the single most "generic admin panel" thing on the page. */
     .stButton>button, .stFormSubmitButton>button {
-        background: linear-gradient(135deg, var(--brand) 0%, #1e3a8a 100%);
-        color: white; border: none; border-radius: 10px;
+        background: var(--brand);
+        color: white; border: none; border-radius: var(--radius-pill);
         font-weight: 600; font-size: 0.95rem;
-        padding: 0.62rem 1.5rem; letter-spacing: 0.2px;
-        box-shadow: 0 8px 20px -10px rgba(37,99,235,0.9);
-        transition: transform .16s, box-shadow .16s, filter .16s;
+        padding: 0.7rem 1.7rem; letter-spacing: 0.1px;
+        box-shadow: 0 10px 22px -10px rgba(124,58,237,0.75);
+        transition: transform .16s, box-shadow .16s, background .16s;
     }
     .stButton>button:hover, .stFormSubmitButton>button:hover {
-        transform: translateY(-2px); filter: brightness(1.06);
-        box-shadow: 0 14px 26px -12px rgba(37,99,235,0.95);
+        transform: translateY(-2px); background: var(--brand-deep);
+        box-shadow: 0 16px 28px -12px rgba(124,58,237,0.85);
         color: white; border: none;
     }
     /* Outside the tab bar, a secondary button is the quieter of a pair of CTAs */
     .stButton>button[kind="secondary"] {
-        background: #fff; color: var(--brand); border: 1px solid #bfdbfe;
+        background: #fff; color: var(--brand); border: 1px solid var(--brand-line);
         box-shadow: 0 6px 16px -12px rgba(15,23,42,0.6);
     }
-    .stButton>button[kind="secondary"]:hover { background: #eff6ff; }
+    .stButton>button[kind="secondary"]:hover {
+        background: var(--brand-tint); color: var(--brand-deep);
+        border-color: var(--brand-2);
+    }
     .stDownloadButton>button {
-        border-radius: 10px; font-weight: 600;
-        border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8;
+        border-radius: var(--radius-pill); font-weight: 600;
+        border: 1px solid var(--brand-line); background: var(--brand-tint); color: var(--brand-ink);
+        padding: 0.6rem 1.4rem;
         transition: background .16s, transform .16s;
     }
-    .stDownloadButton>button:hover { background: #dbeafe; transform: translateY(-2px); }
+    .stDownloadButton>button:hover { background: #ede9fe; transform: translateY(-2px); }
 
     /* ── Top tab bar (real Streamlit buttons, styled as a nav) ── */
     [data-testid="stHeader"] { background: transparent; }
@@ -448,44 +564,68 @@ st.markdown("""
        The bottom margin moves up here too. Left on the bar it would sit inside the
        stuck region, leaving a transparent 24px band with page content sliding
        through it just under the header. */
+    /* top:0, not 0.2rem. Any offset leaves a transparent sliver above the bar that
+       page content scrolls up through, which looked like text tearing along the top
+       edge of the screen. */
     div[data-testid="stLayoutWrapper"]:has(.nav-marker) {
-        position: sticky; top: 0.2rem; z-index: 999;
-        margin-bottom: 1.5rem;
+        position: sticky; top: 0; z-index: 999;
+        margin-bottom: 2.2rem;
     }
     div[data-testid="stLayoutWrapper"]:has(.nav-marker)
         > div[data-testid="stHorizontalBlock"] { margin-bottom: 0; }
 
     /* The column row itself becomes the bar. Its own sticky is kept as a fallback
        for Streamlit builds that do not emit the wrapper above. */
+    /* An open bar, not a boxed card. The bordered rounded card made the nav read as
+       a widget dropped onto the page: it drew a hard rectangle around the links and
+       squeezed them toward the middle. A hairline under an otherwise transparent bar
+       lets the logo sit at the page edge and the links breathe, which is the whole
+       difference between a marketing header and a form toolbar. */
     div[data-testid="stHorizontalBlock"]:has(.nav-marker) {
-        position: sticky; top: 0.2rem; z-index: 999;
+        position: sticky; top: 0; z-index: 999;
         align-items: center;
-        padding: 0.42rem 0.7rem; margin-bottom: 1.5rem;
-        background: rgba(255,255,255,0.92);
-        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-        border: 1px solid var(--line); border-radius: 14px;
-        box-shadow: 0 10px 26px -18px rgba(15,23,42,0.55);
+        padding: 0.75rem 0.1rem; margin-bottom: 2.2rem;
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        border: 0; border-radius: 0;
+        box-shadow: none;
+    }
+    /* The bar sits inside the max-width container, so its background would stop at
+       the container edge and leave two white gutters with page content scrolling up
+       through them. A full-viewport pseudo-element behind it reaches the screen edge
+       without moving the bar's contents off the content grid. */
+    div[data-testid="stHorizontalBlock"]:has(.nav-marker)::before {
+        content: ""; position: absolute; top: 0; bottom: 0;
+        left: 50%; transform: translateX(-50%);
+        width: 100vw; z-index: -1;
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(15,23,42,0.08);
     }
     div[data-testid="stHorizontalBlock"]:has(.nav-marker) div[data-testid="stColumn"] { min-width: 0; }
 
     .nav-brand-inline {
-        display: flex; align-items: center; gap: 0.55rem; white-space: nowrap;
-        font-family: 'Space Grotesk', sans-serif; font-size: 1.02rem;
+        display: flex; align-items: center; gap: 0.6rem; white-space: nowrap;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.12rem; font-weight: 700; letter-spacing: -0.3px;
         color: var(--ink); padding-left: 0.2rem;
     }
-    .nav-brand-inline b { color: var(--brand); }
+    .nav-brand-inline b { color: var(--brand); font-weight: 700; }
+    /* A squircle at 36px with a generous radius. The old 30px/9px mark was small
+       enough to read as a favicon squeezed into the bar rather than a logo. */
     .nav-logo {
-        width: 30px; height: 30px; border-radius: 9px; flex: none;
-        display: grid; place-items: center; font-size: 0.95rem;
-        background: linear-gradient(135deg, var(--brand) 0%, #1e3a8a 100%);
+        width: 36px; height: 36px; border-radius: 12px; flex: none;
+        display: grid; place-items: center; font-size: 1.05rem;
+        background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+        box-shadow: 0 6px 16px -8px rgba(124,58,237,0.85);
     }
 
     /* Inactive tab = flat text link (overrides the global solid-blue button style) */
     div[data-testid="stHorizontalBlock"]:has(.nav-marker) .stButton > button {
         background: transparent !important; color: #475569 !important;
         border: 1px solid transparent !important; box-shadow: none !important;
-        font-size: 0.85rem !important; font-weight: 500 !important;
-        padding: 0.44rem 0.3rem !important; border-radius: 9px !important;
+        font-size: 0.92rem !important; font-weight: 500 !important;
+        padding: 0.44rem 0.55rem !important; border-radius: var(--radius-pill) !important;
         transform: none !important; white-space: nowrap;
     }
     div[data-testid="stHorizontalBlock"]:has(.nav-marker) .stButton > button:hover {
@@ -508,16 +648,22 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"]:has(.nav-marker)
         > div[data-testid="stColumn"]:not(:last-child) .stButton > button[kind="primary"]::after {
         content: ""; position: absolute;
-        left: 0.85rem; right: 0.85rem; bottom: 0.14rem;
+        left: 0.55rem; right: 0.55rem; bottom: 0.02rem;
         height: 2px; border-radius: 2px; background: var(--brand);
     }
     /* CTA keeps the solid pill in both states — it is the primary action, not a tab */
     div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:last-child .stButton > button,
     div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:last-child .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, var(--brand) 0%, #1e3a8a 100%) !important;
+        background: var(--brand) !important;
         color: #fff !important; font-weight: 600 !important;
         border-color: transparent !important;
-        box-shadow: 0 8px 18px -10px rgba(37,99,235,0.9) !important;
+        border-radius: var(--radius-pill) !important;
+        padding: 0.6rem 1.5rem !important;
+        box-shadow: 0 10px 22px -10px rgba(124,58,237,0.75) !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.nav-marker) > div[data-testid="stColumn"]:last-child .stButton > button:hover {
+        background: var(--brand-deep) !important;
+        box-shadow: 0 14px 26px -10px rgba(124,58,237,0.9) !important;
     }
 
     /* ── Wide screens: three zones, with the tab cluster centred ──────────
@@ -607,9 +753,13 @@ st.markdown("""
     }
     @media (max-width: 680px) {
         /* A wrapped bar is three or four rows tall — pinned to the top of a phone screen
-           that would eat a third of the viewport, so it scrolls away with the page. */
+           that would eat a third of the viewport, so it scrolls away with the page.
+           `relative` rather than `static`: the full-bleed ::before that carries the bar's
+           background is absolutely positioned, and with a static parent it would resolve
+           against some far ancestor and paint a 100vw white band down the whole page. */
+        div[data-testid="stLayoutWrapper"]:has(.nav-marker) { position: static; }
         div[data-testid="stHorizontalBlock"]:has(.nav-marker) {
-            position: static; margin-bottom: 1rem;
+            position: relative; margin-bottom: 1rem;
         }
         /* Horizontal padding stays above the 0.35rem underline inset used below, or the
            active tab's rule would compute to a negative width and vanish. */
@@ -669,7 +819,7 @@ st.markdown("""
     /* ── Footer ── */
     .site-footer {
         margin: 3rem 0 1rem 0; padding: 2.2rem 2.4rem 1.3rem;
-        background: linear-gradient(135deg, #0b1220 0%, #131c33 100%);
+        background: linear-gradient(135deg, #150b26 0%, #231041 100%);
         border-radius: 20px; color: #cbd5e1;
     }
     .foot-grid { display: grid; grid-template-columns: 1.7fr 1fr 1fr 1fr; gap: 2rem; }
@@ -677,7 +827,7 @@ st.markdown("""
     .foot-brand .fb-top { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.8rem; }
     .foot-brand .fl {
         width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
-        background: linear-gradient(135deg, var(--brand) 0%, #1e3a8a 100%);
+        background: linear-gradient(135deg, var(--brand) 0%, #5b21b6 100%);
     }
     .foot-brand b { color: #fff; font-family: 'Space Grotesk', sans-serif; font-size: 1.02rem; }
     .foot-brand p { margin: 0 0 0.9rem 0; max-width: 36ch; font-size: 0.84rem; line-height: 1.65; color: #94a3b8; }
@@ -697,7 +847,7 @@ st.markdown("""
         display: block; padding: 0.24rem 0; font-size: 0.85rem;
         color: #94a3b8 !important; transition: color .15s;
     }
-    .fcol a:hover { color: #38bdf8 !important; }
+    .fcol a:hover { color: #a78bfa !important; }
     .foot-bottom {
         display: flex; align-items: center; justify-content: space-between;
         flex-wrap: wrap; gap: 0.8rem; margin-top: 1.8rem; padding-top: 1.1rem;
@@ -722,8 +872,8 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.09); border-radius: 20px; color: #cbd5e1;
         padding: 1.5rem 1.7rem 1.6rem;
         background:
-            radial-gradient(900px 320px at 12% -20%, rgba(56,189,248,0.20), transparent 60%),
-            linear-gradient(135deg, #0b1220 0%, #131c33 60%, #0d2547 100%);
+            radial-gradient(900px 320px at 12% -20%, rgba(167,139,250,0.20), transparent 60%),
+            linear-gradient(135deg, #150b26 0%, #231041 60%, #2e1259 100%);
     }
     .viz-dark h4 { color: #f1f5f9; margin: 0 0 0.2rem; font-size: 1.08rem; }
     .viz-dark .viz-sub { color: #94a3b8; }
@@ -849,11 +999,11 @@ st.markdown("""
     .st-key-google_signup button { font-weight: 600 !important; }
 
     .plan-card {
-        border: 1px solid #bfdbfe; border-radius: 16px; padding: 1.4rem 1.5rem;
-        background: linear-gradient(160deg, #f8fbff 0%, #eff6ff 100%);
+        border: 1px solid #ddd6fe; border-radius: 16px; padding: 1.4rem 1.5rem;
+        background: linear-gradient(160deg, #f8fbff 0%, #f5f3ff 100%);
     }
     .plan-badge {
-        display: inline-block; background: #1d4ed8; color: #fff; font-size: 0.68rem;
+        display: inline-block; background: #6d28d9; color: #fff; font-size: 0.68rem;
         font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
         padding: 0.22rem 0.6rem; border-radius: 99px; margin-bottom: 0.7rem;
     }
@@ -864,7 +1014,7 @@ st.markdown("""
     .plan-list { margin: 1rem 0 0; padding-left: 1.05rem; }
     .plan-list li { font-size: 0.85rem; color: #334155; line-height: 1.9; }
     .plan-note {
-        margin-top: 1rem; padding-top: 0.85rem; border-top: 1px dashed #bfdbfe;
+        margin-top: 1rem; padding-top: 0.85rem; border-top: 1px dashed #ddd6fe;
         font-size: 0.78rem; color: var(--muted); line-height: 1.6;
     }
 
@@ -887,17 +1037,33 @@ st.markdown("""
     }
 
     /* Locked-state teaser */
+    /* This is an upgrade offer, not a warning. Dashed amber is the visual language
+       of "something is wrong", so the first thing on the screening page was telling
+       guests off for being guests. Recast as a quiet brand-tinted card. */
     .lockbox {
-        border: 1px dashed #fbbf24; background: #fffbeb; border-radius: 14px;
-        padding: 1rem 1.2rem; margin: 0.6rem 0 0.2rem;
+        border: 1px solid var(--brand-line); background: var(--brand-tint);
+        border-radius: 16px; text-align: center;
+        padding: 1.3rem 1.5rem; margin: 0.2rem auto 0.9rem; max-width: 720px;
     }
+    .lockbox p { max-width: 78ch; margin-left: auto; margin-right: auto; }
     /* A div, not an <h5> — Streamlit hangs a link-anchor icon off every heading it
        renders, which looks like a stray glyph in the middle of a banner. */
     .lockbox b.lb-h {
-        display: block; margin: 0 0 0.3rem; font-size: 0.95rem;
-        color: #92400e; font-weight: 700;
+        display: block; margin: 0 0 0.35rem; font-size: 0.98rem;
+        color: var(--brand-deep); font-weight: 700;
     }
-    .lockbox p { margin: 0; font-size: 0.84rem; color: #a16207; line-height: 1.6; }
+    .lockbox p { margin: 0; font-size: 0.88rem; color: #6b5b8a; line-height: 1.6; }
+    /* Pull the trial button up against the card so the two read as one offer rather
+       than a card followed by an unrelated button. */
+    /* The element container shrink-wraps the button, so centring *inside* it does
+       nothing — the container itself is only as wide as the button. Auto inline
+       margins on the shrink-wrapped box are what actually move it to the middle,
+       and align-self overrides the stretch the parent flex column would apply. */
+    .st-key-gate_cta {
+        margin: -0.4rem auto 1.4rem auto;
+        width: fit-content; align-self: center;
+    }
+    .st-key-gate_cta .stButton > button { padding: 0.55rem 1.5rem !important; }
 
     /* Batch capacity meter */
     .meter {
@@ -975,14 +1141,14 @@ st.markdown("""
         div[data-testid="stElementContainer"]:has(.aud) > div > div,
     div[data-testid="stHorizontalBlock"]:has(.aud)
         div[data-testid="stElementContainer"]:has(.aud) > div > div > div { height: 100%; }
-    .aud-r { border-top: 3px solid #2563eb; }
+    .aud-r { border-top: 3px solid #7c3aed; }
     .aud-c { border-top: 3px solid #16a34a; }
-    .aud:hover { transform: translateY(-3px); border-color: #bfdbfe; box-shadow: 0 18px 38px -24px rgba(15,23,42,0.4); }
+    .aud:hover { transform: translateY(-3px); border-color: #ddd6fe; box-shadow: 0 18px 38px -24px rgba(15,23,42,0.4); }
     .aud .tagline {
         display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
         text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 99px; margin-bottom: 0.6rem;
     }
-    .aud-r .tagline { background: #eff6ff; color: #1d4ed8; }
+    .aud-r .tagline { background: #f5f3ff; color: #6d28d9; }
     .aud-c .tagline { background: #f0fdf4; color: #15803d; }
     .aud h4 { margin: 0 0 0.3rem; font-size: 1.12rem; color: var(--ink); font-weight: 700; }
     .aud p { margin: 0 0 0.7rem; font-size: 0.87rem; color: var(--muted); line-height: 1.6; }
@@ -997,7 +1163,7 @@ st.markdown("""
         border-radius: 12px; padding: 0.8rem 0.95rem;
     }
     .stage b {
-        display: block; color: #7dd3fc; font-family: 'JetBrains Mono', monospace;
+        display: block; color: #c4b5fd; font-family: 'JetBrains Mono', monospace;
         font-size: 0.78rem; letter-spacing: 0.04em; margin-bottom: 0.3rem;
     }
     .stage span { color: #b8c4d4; font-size: 0.83rem; line-height: 1.58; }
@@ -1021,15 +1187,26 @@ st.markdown("""
     }
 
     /* Closing CTA band */
+    /* Centred, because the button that belongs to this band is centred. Left-aligned
+       copy over a centred button read as two unrelated things stacked. */
     .cta-band {
-        margin-top: 1.7rem; border-radius: 20px; padding: 1.7rem 2rem 4.9rem;
+        margin-top: 3rem; border-radius: 24px; padding: 2.6rem 2rem 5.2rem;
         border: 1px solid rgba(255,255,255,0.09);
+        text-align: center;
         background:
-            radial-gradient(700px 240px at 12% -20%, rgba(56,189,248,0.22), transparent 60%),
-            linear-gradient(135deg, #0b1220 0%, #132244 100%);
+            radial-gradient(700px 260px at 50% -20%, rgba(167,139,250,0.26), transparent 62%),
+            linear-gradient(135deg, #150b26 0%, #281048 100%);
     }
-    .cta-band h3 { margin: 0 0 0.35rem; color: #f1f5f9; font-size: 1.28rem; }
-    .cta-band p  { margin: 0; color: #94a3b8; font-size: 0.88rem; line-height: 1.6; max-width: 68ch; }
+    .cta-band h3 {
+        margin: 0 auto 0.5rem; color: #f8fafc;
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: clamp(1.5rem, 2.6vw, 2rem); font-weight: 600;
+        letter-spacing: -0.5px; text-wrap: balance; max-width: 22ch;
+    }
+    .cta-band p  {
+        margin: 0 auto; color: #cbd5e1; font-size: 0.97rem;
+        line-height: 1.62; max-width: 56ch;
+    }
     .cta-btn-marker { display: none; }
     /* Lift the button row into the space reserved by the band's bottom padding. */
     div[data-testid="stHorizontalBlock"]:has(.cta-btn-marker) {
@@ -1048,10 +1225,10 @@ st.markdown("""
     }
     @media (max-width: 620px) { .price-grid { grid-template-columns: 1fr; } }
     .price-card { position: relative; border: 1px solid var(--line); border-radius: 18px; background: #fff; padding: 1.5rem 1.4rem; }
-    .price-card.pop { border-color: #93c5fd; box-shadow: 0 18px 42px -28px rgba(37,99,235,0.9); }
+    .price-card.pop { border-color: #c4b5fd; box-shadow: 0 18px 42px -28px rgba(124,58,237,0.9); }
     .price-tag {
         position: absolute; top: -11px; right: 1.2rem;
-        background: linear-gradient(135deg, var(--brand), #1e3a8a); color: #fff;
+        background: linear-gradient(135deg, var(--brand), #5b21b6); color: #fff;
         font-size: 0.66rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
         padding: 0.3rem 0.7rem; border-radius: 999px;
     }
@@ -1077,7 +1254,7 @@ st.markdown("""
     .c-ico {
         width: 38px; height: 38px; border-radius: 11px; margin-bottom: 0.7rem;
         display: grid; place-items: center; font-size: 1.1rem;
-        background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 1px solid #bfdbfe;
+        background: linear-gradient(135deg, #f5f3ff, #ede9fe); border: 1px solid #ddd6fe;
     }
     .contact-card h4 { margin: 0 0 0.3rem; font-size: 0.97rem; color: var(--ink); }
     .contact-card p  { margin: 0; font-size: 0.84rem; color: var(--muted); line-height: 1.65; }
@@ -1095,8 +1272,8 @@ st.markdown("""
        written against stHorizontalBlock rather than against each page.
        ══════════════════════════════════════════════════════════════ */
 
-    /* Wide screens: keep the 1440px column off the window edge. */
-    @media (max-width: 1520px) {
+    /* Wide screens: keep the 1200px column off the window edge. */
+    @media (max-width: 1280px) {
         .block-container { padding-left: 2rem; padding-right: 2rem; }
     }
 
@@ -1136,8 +1313,22 @@ st.markdown("""
             flex: 1 1 100%; min-width: 100%;
         }
 
-        .section-title { margin: 1.4rem 0 0.8rem 0; }
-        .section-sub { margin-left: 0.95rem; }
+        .section-title { font-size: 1.28rem; margin: 1.9rem 0 0.4rem 0; }
+        /* The display variants are set in clamp() with a rem floor, so on a phone they
+           hold at their minimum — 1.9rem of Fraunces against a 1.28rem section title is
+           a jump the small screen cannot carry. Re-cut both, and pull the measure in so
+           the balanced heading still breaks into two or three even lines. */
+        .section-title.mid, .section-title.page {
+            font-size: 1.55rem; letter-spacing: -0.4px; max-width: 18ch;
+        }
+        .section-title.mid { margin-top: 2.4rem; }
+        .section-title.page { margin-top: 0.2rem; }
+        .section-sub { margin-left: 0; font-size: 0.9rem; }
+        .section-sub.mid { margin-bottom: 1.5rem; }
+        .section-sub.page { font-size: 0.9rem; margin-bottom: 1.3rem; }
+        .lockbox { padding: 1.1rem 1.1rem; border-radius: 14px; }
+        .stButton>button, .stFormSubmitButton>button,
+        .stDownloadButton>button { padding: 0.62rem 1.25rem; font-size: 0.9rem; }
         .hero-badge { font-size: 0.7rem; line-height: 1.35; padding: 5px 11px; }
         .hstat span { font-size: 0.68rem; letter-spacing: 0.5px; }
 
@@ -1560,9 +1751,9 @@ def render_signup() -> None:
     credentials into a local file. Email identifies the desk; it grants no access
     that "continue without an account" does not also grant.
     """
-    st.markdown('<div class="section-title">Start your free trial</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title page">Start your free trial</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="section-sub">No card, no licence key. The full '
+        '<div class="section-sub page">No card, no licence key. The full '
         f'{MAX_BATCH}-CV batch, unlocked on this machine.</div>',
         unsafe_allow_html=True,
     )
@@ -1659,7 +1850,7 @@ SCORE_FORMULA_HTML = """
 <div style="font-size:0.8rem;font-weight:700;color:#1e293b;margin-bottom:0.5rem">
   How the score is built
 </div>
-<div class="formula-row"><span>🔵 Skills match</span><i>50%</i></div>
+<div class="formula-row"><span>🟣 Skills match</span><i>50%</i></div>
 <div class="formula-row"><span>🟢 Relevant experience</span><i>25%</i></div>
 <div class="formula-row"><span>🔴 Location fit</span><i>15%</i></div>
 <div class="formula-row"><span>🟡 Education</span><i>10%</i></div>
@@ -1764,28 +1955,28 @@ if PAGE == "Home":
     <svg class="viz-svg" viewBox="0 0 340 300" role="img" aria-label="Animated illustration of a resume being scanned">
       <defs>
         <linearGradient id="rrBeam" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stop-color="#38bdf8" stop-opacity="0"/>
-          <stop offset="55%"  stop-color="#38bdf8" stop-opacity="0.45"/>
-          <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+          <stop offset="0%"   stop-color="#a78bfa" stop-opacity="0"/>
+          <stop offset="55%"  stop-color="#a78bfa" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/>
         </linearGradient>
       </defs>
       <rect x="58" y="6" width="224" height="288" rx="13" fill="#ffffff" stroke="#e2e8f0"/>
       <rect x="78" y="26" width="104" height="13" rx="6" fill="#0f172a" opacity="0.82"/>
       <rect x="78" y="47" width="148" height="7"  rx="3.5" fill="#cbd5e1"/>
-      <rect x="78" y="72" width="58"  height="7"  rx="3.5" fill="#93c5fd"/>
+      <rect x="78" y="72" width="58"  height="7"  rx="3.5" fill="#c4b5fd"/>
       <rect x="78" y="87" width="132" height="6"  rx="3" fill="#e8edf3"/>
       <rect x="78" y="99" width="104" height="6"  rx="3" fill="#e8edf3"/>
-      <rect x="78" y="124" width="44" height="7"  rx="3.5" fill="#93c5fd"/>
-      <rect x="78" y="139" width="42" height="14" rx="7" fill="#eff6ff" stroke="#bfdbfe"/>
-      <rect x="126" y="139" width="52" height="14" rx="7" fill="#eff6ff" stroke="#bfdbfe"/>
-      <rect x="184" y="139" width="36" height="14" rx="7" fill="#eff6ff" stroke="#bfdbfe"/>
-      <rect x="78" y="159" width="60" height="14" rx="7" fill="#eff6ff" stroke="#bfdbfe"/>
-      <rect x="144" y="159" width="46" height="14" rx="7" fill="#eff6ff" stroke="#bfdbfe"/>
-      <rect x="78" y="192" width="70" height="7"  rx="3.5" fill="#93c5fd"/>
+      <rect x="78" y="124" width="44" height="7"  rx="3.5" fill="#c4b5fd"/>
+      <rect x="78" y="139" width="42" height="14" rx="7" fill="#f5f3ff" stroke="#ddd6fe"/>
+      <rect x="126" y="139" width="52" height="14" rx="7" fill="#f5f3ff" stroke="#ddd6fe"/>
+      <rect x="184" y="139" width="36" height="14" rx="7" fill="#f5f3ff" stroke="#ddd6fe"/>
+      <rect x="78" y="159" width="60" height="14" rx="7" fill="#f5f3ff" stroke="#ddd6fe"/>
+      <rect x="144" y="159" width="46" height="14" rx="7" fill="#f5f3ff" stroke="#ddd6fe"/>
+      <rect x="78" y="192" width="70" height="7"  rx="3.5" fill="#c4b5fd"/>
       <rect x="78" y="207" width="150" height="6" rx="3" fill="#e8edf3"/>
       <rect x="78" y="219" width="126" height="6" rx="3" fill="#e8edf3"/>
       <rect x="78" y="231" width="140" height="6" rx="3" fill="#e8edf3"/>
-      <rect x="78" y="256" width="52" height="7"  rx="3.5" fill="#93c5fd"/>
+      <rect x="78" y="256" width="52" height="7"  rx="3.5" fill="#c4b5fd"/>
       <rect x="78" y="271" width="118" height="6" rx="3" fill="#e8edf3"/>
       <g class="rr-hl">
         <rect x="72" y="20" width="118" height="25" rx="7" fill="none" stroke="#22c55e" stroke-width="1.6" stroke-dasharray="4 3"/>
@@ -1801,7 +1992,7 @@ if PAGE == "Home":
       </g>
       <g class="rr-beam">
         <rect x="58" y="6" width="224" height="34" fill="url(#rrBeam)"/>
-        <rect x="58" y="39" width="224" height="1.8" fill="#38bdf8" opacity="0.95"/>
+        <rect x="58" y="39" width="224" height="1.8" fill="#a78bfa" opacity="0.95"/>
       </g>
     </svg>
   </div>
@@ -1834,10 +2025,10 @@ if PAGE == "Home":
   <svg class="viz-svg" viewBox="0 0 1180 150" role="img" aria-label="Diagram of the six-stage screening pipeline">
     <defs>
       <marker id="rrArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path d="M0 0 L10 5 L0 10 z" fill="#38bdf8"/>
+        <path d="M0 0 L10 5 L0 10 z" fill="#a78bfa"/>
       </marker>
     </defs>
-    <g fill="none" stroke="#38bdf8" stroke-width="1.6" marker-end="url(#rrArrow)" opacity="0.75">
+    <g fill="none" stroke="#a78bfa" stroke-width="1.6" marker-end="url(#rrArrow)" opacity="0.75">
       <path d="M184 74 H 208"/><path d="M379 74 H 403"/><path d="M574 74 H 598"/>
       <path d="M769 74 H 793"/><path d="M964 74 H 988"/>
     </g>
@@ -1862,7 +2053,7 @@ if PAGE == "Home":
         <text x="882" y="60" text-anchor="middle" font-size="21">📊</text>
         <text x="882" y="86" text-anchor="middle" font-size="13" font-weight="600" fill="#e2e8f0">Score</text>
         <text x="882" y="103" text-anchor="middle" font-size="10.5" fill="#7c8ba1">4 weighted signals</text></g>
-      <g><rect x="995" y="30" width="164" height="88" rx="14" fill="rgba(56,189,248,0.13)" stroke="rgba(56,189,248,0.45)"/>
+      <g><rect x="995" y="30" width="164" height="88" rx="14" fill="rgba(167,139,250,0.13)" stroke="rgba(167,139,250,0.45)"/>
         <text x="1077" y="60" text-anchor="middle" font-size="21">🏆</text>
         <text x="1077" y="86" text-anchor="middle" font-size="13" font-weight="600" fill="#e2e8f0">Rank &amp; export</text>
         <text x="1077" y="103" text-anchor="middle" font-size="10.5" fill="#7c8ba1">shortlist · CSV</text></g>
@@ -1884,11 +2075,11 @@ if PAGE == "Home":
       <text x="16" y="18" font-size="11" font-weight="700" fill="#64748b" font-family="Inter, sans-serif">JOB DESCRIPTION</text>
       <text x="444" y="18" text-anchor="end" font-size="11" font-weight="700" fill="#64748b" font-family="Inter, sans-serif">RESUME</text>
       <g font-family="Inter, sans-serif" font-size="11.5">
-        <g><rect x="10" y="32" width="132" height="30" rx="9" fill="#eff6ff" stroke="#bfdbfe"/><text x="76" y="51" text-anchor="middle" fill="#1d4ed8">Python</text></g>
-        <g><rect x="10" y="74" width="132" height="30" rx="9" fill="#eff6ff" stroke="#bfdbfe"/><text x="76" y="93" text-anchor="middle" fill="#1d4ed8">Django</text></g>
-        <g><rect x="10" y="116" width="132" height="30" rx="9" fill="#eff6ff" stroke="#bfdbfe"/><text x="76" y="135" text-anchor="middle" fill="#1d4ed8">REST APIs</text></g>
-        <g><rect x="10" y="158" width="132" height="30" rx="9" fill="#eff6ff" stroke="#bfdbfe"/><text x="76" y="177" text-anchor="middle" fill="#1d4ed8">PostgreSQL</text></g>
-        <g><rect x="10" y="200" width="132" height="30" rx="9" fill="#eff6ff" stroke="#bfdbfe"/><text x="76" y="219" text-anchor="middle" fill="#1d4ed8">Docker</text></g>
+        <g><rect x="10" y="32" width="132" height="30" rx="9" fill="#f5f3ff" stroke="#ddd6fe"/><text x="76" y="51" text-anchor="middle" fill="#6d28d9">Python</text></g>
+        <g><rect x="10" y="74" width="132" height="30" rx="9" fill="#f5f3ff" stroke="#ddd6fe"/><text x="76" y="93" text-anchor="middle" fill="#6d28d9">Django</text></g>
+        <g><rect x="10" y="116" width="132" height="30" rx="9" fill="#f5f3ff" stroke="#ddd6fe"/><text x="76" y="135" text-anchor="middle" fill="#6d28d9">REST APIs</text></g>
+        <g><rect x="10" y="158" width="132" height="30" rx="9" fill="#f5f3ff" stroke="#ddd6fe"/><text x="76" y="177" text-anchor="middle" fill="#6d28d9">PostgreSQL</text></g>
+        <g><rect x="10" y="200" width="132" height="30" rx="9" fill="#f5f3ff" stroke="#ddd6fe"/><text x="76" y="219" text-anchor="middle" fill="#6d28d9">Docker</text></g>
         <g><rect x="318" y="32" width="132" height="30" rx="9" fill="#f0fdf4" stroke="#bbf7d0"/><text x="384" y="51" text-anchor="middle" fill="#166534">Python</text></g>
         <g><rect x="318" y="74" width="132" height="30" rx="9" fill="#f0fdf4" stroke="#bbf7d0"/><text x="384" y="93" text-anchor="middle" fill="#166534">Django</text></g>
         <g><rect x="318" y="116" width="132" height="30" rx="9" fill="#f0fdf4" stroke="#bbf7d0"/><text x="384" y="135" text-anchor="middle" fill="#166534">REST APIs</text></g>
@@ -2000,11 +2191,11 @@ if PAGE == "Home":
 if PAGE == CAND_TAB:
     st.markdown(
         '<span class="anchor" id="candidate"></span>'
-        '<div class="section-title">Check my CV</div>',
+        '<div class="section-title page">Check my CV</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="section-sub">Paste the job you are applying for and upload your CV. '
+        '<div class="section-sub page">Paste the job you are applying for and upload your CV. '
         'You get the same score a recruiter running this tool would see — and, unlike them, '
         'the list of what is missing.</div>',
         unsafe_allow_html=True,
@@ -2205,11 +2396,11 @@ if SIGNUP_GATE:
 if PAGE == CTA_TAB and not SIGNUP_GATE:
     st.markdown(
         '<span class="anchor" id="upload"></span>'
-        '<div class="section-title">Start screening</div>',
+        '<div class="section-title page">Start screening</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="section-sub">Everything for a screening run lives on this page — '
+        '<div class="section-sub page">Everything for a screening run lives on this page — '
         'describe the role, set your filters, drop in the CVs, and rank.</div>',
         unsafe_allow_html=True,
     )
@@ -2522,7 +2713,7 @@ if PAGE == CTA_TAB and jd_text.strip() and (uploaded_files or st.session_state.g
             st.bar_chart(
                 chart_data,
                 height=max(240, 42 * top_n),
-                color="#2563eb",
+                color="#7c3aed",
                 horizontal=True,
                 x_label="",
                 y_label="Match score (0–100)",
