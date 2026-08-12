@@ -2281,6 +2281,16 @@ if PAGE == CTA_TAB and not SIGNUP_GATE:
                 else:
                     exp_label = f"{exp_min:g}–{exp_max:g} yrs"
                 st.markdown(f"**Experience required:** {exp_label}")
+                # The qualification bar drives the education score, so show which
+                # level was read out of the JD rather than leaving the recruiter to
+                # guess why a candidate lost marks there. "Any" means the JD named
+                # no qualification, and education falls back to a plain ranking of
+                # the candidate's own highest degree.
+                edu_label = {
+                    1: "School", 2: "Diploma", 3: "Bachelor's",
+                    4: "Master's", 5: "Doctorate",
+                }.get(jd.get("education_min", 0), "Any")
+                st.markdown(f"**Qualification:** {edu_label}")
                 st.markdown(f"**Location:** {jd['location']}")
             else:
                 st.info("Enter a job description to see what was detected.")

@@ -3,10 +3,15 @@ ranking.py - Candidate Ranking Engine
 
 Final Score = (0.50 × skill) + (0.25 × experience) + (0.10 × education) + (0.15 × location)
 
-The skill component blends two signals:
+The skill component combines two signals:
   • JD-skill coverage  — fraction of the job's required skills found in the resume.
   • Semantic relevance — TF-IDF cosine similarity between the full resume text
     and the full job description, computed across the whole uploaded batch.
+    This closes part of the gap coverage leaves rather than being averaged in,
+    so it can lift an under-detected resume but never caps a complete one.
+
+Education is scored against the qualification the JD asks for, not an absolute
+ladder — meeting the stated bar scores full marks.
 
 The semantic signal (pure Python, no extra dependencies) makes ranking robust
 when resumes describe relevant work using words outside the skill dictionary,
@@ -24,6 +29,7 @@ from utils import (
     extract_experience_years,
     extract_experience_range,
     extract_education,
+    extract_education_requirement,
     extract_location,
 )
 
@@ -37,9 +43,12 @@ WEIGHTS = {
     "location":   0.15,
 }
 
-# How the skill component splits between exact JD coverage and semantic relevance.
-SKILL_COVERAGE_WEIGHT = 0.85
-SKILL_SEMANTIC_WEIGHT = 0.15
+# How much of the gap left by exact JD-skill coverage the semantic signal is
+# allowed to close. Semantic relevance is a *supporting* signal: it exists to
+# rescue a resume that plainly does the job but words it outside the skill
+# dictionary. It is deliberately not able to move a candidate who already
+# covers every stated requirement, because there is nothing left to rescue.
+SKILL_SEMANTIC_LIFT = 0.5
 
 # Experience is only valuable when it's *relevant* experience: 7 years of sales
 # work should not boost a candidate for a civil-engineering role. We therefore
@@ -134,15 +143,30 @@ def compute_semantic_scores(resume_texts: list[str], jd_text: str) -> list[float
 
 def compute_skill_score(coverage: float, semantic_0_1: float, jd_has_skills: bool) -> float:
     """
-    Blend exact JD-skill coverage (0-100) with semantic relevance (0-1 → 0-100).
-    If the JD has no detectable skills, fall back entirely to semantic relevance
-    so candidates can still be ranked.
+    Combine exact JD-skill coverage (0-100) with semantic relevance (0-1).
+
+    Semantic relevance closes part of the gap that coverage leaves behind,
+    rather than being averaged in alongside it. The old formulation was
+    `0.85 × coverage + 0.15 × semantic`, which meant the semantic term could
+    only ever pull a good candidate DOWN: two different documents — a resume
+    and a job advert — never score near 1.0 on cosine similarity, so a
+    candidate holding every single skill the JD asked for was capped around 94
+    and, through the experience relevance multiplier below, docked again on
+    experience. Covering the whole requirement now scores the whole 100.
+
+    A weak candidate can still be lifted by writing about genuinely relevant
+    work in words the skill dictionary does not carry, which is the reason the
+    semantic signal exists. Unrelated resumes score ~0.03-0.05 here, so the
+    lift they receive is negligible.
+
+    If the JD has no detectable skills at all, fall back entirely to semantic
+    relevance so candidates can still be ranked.
     """
-    semantic_100 = semantic_0_1 * 100.0
     if not jd_has_skills:
-        return round(semantic_100, 1)
-    blended = SKILL_COVERAGE_WEIGHT * coverage + SKILL_SEMANTIC_WEIGHT * semantic_100
-    return round(blended, 1)
+        return round(semantic_0_1 * 100.0, 1)
+
+    lifted = coverage + (100.0 - coverage) * semantic_0_1 * SKILL_SEMANTIC_LIFT
+    return round(min(lifted, 100.0), 1)
 
 
 def compute_experience_score(resume_years: float,
@@ -181,8 +205,35 @@ def compute_experience_score(resume_years: float,
     return EXPERIENCE_IN_RANGE_SCORE + bonus
 
 
-def compute_education_score(education: dict) -> float:
-    return EDUCATION_SCORE_MAP.get(education.get("score", 0), 0)
+def compute_education_score(education: dict, required_level: int = 0) -> float:
+    """
+    Score the candidate's qualification against the bar the JD actually set.
+
+    Education used to be the only component judged on an absolute ladder rather
+    than against the job: a B.E. scored 60 whatever the vacancy, so a candidate
+    who exactly met a "B.E. in Civil Engineering" requirement still lost marks,
+    and an MBA — worth 80 on that ladder — outscored the civil engineer on a
+    civil site role. Skills, experience and location are all judged against the
+    JD; this now is too.
+
+    Meeting the bar scores full. Exceeding it scores full as well and no more —
+    a second degree beyond what the job asked for is not a better fit for the
+    job, and paying for it here is how "overqualified" candidates float to the
+    top of a hands-on shortlist. Falling short ramps down proportionally.
+
+    With no bar stated the old absolute ladder is kept, since there is nothing
+    better to compare against.
+    """
+    candidate_level = education.get("score", 0)
+
+    if not required_level:
+        return float(EDUCATION_SCORE_MAP.get(candidate_level, 0))
+
+    if candidate_level <= 0:
+        return 0.0
+    if candidate_level >= required_level:
+        return 100.0
+    return (candidate_level / required_level) * 100.0
 
 
 def compute_location_score(resume_location: str, jd_location: str) -> float:
@@ -215,6 +266,7 @@ def parse_job_description(jd_text: str) -> dict:
         "experience_years": display_years,
         "experience_min":   exp_range["min"],
         "experience_max":   exp_range["max"],
+        "education_min":    extract_education_requirement(jd_text),
         "location":         extract_location(jd_text) or "Not Specified",
         "raw_text":         jd_text,
     }
@@ -374,7 +426,9 @@ def score_candidate(candidate: dict, jd: dict, semantic_0_1: float = 0.0) -> dic
         jd.get("experience_min", jd.get("experience_years", 0.0)),
         jd.get("experience_max"),
     )
-    edu_score = compute_education_score(candidate.get("education", {}))
+    edu_score = compute_education_score(
+        candidate.get("education", {}), jd.get("education_min", 0)
+    )
     loc_score = compute_location_score(candidate.get("location", ""), jd.get("location", ""))
 
     # Down-weight experience for candidates who don't fit the role.

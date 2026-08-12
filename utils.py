@@ -316,36 +316,115 @@ def extract_education(text: str) -> dict:
     return {"level": best_level, "score": best_score}
 
 
+# School-level qualifications are ignored when reading a JD's bar unless the JD
+# names nothing higher, since a job advert often mentions "12th pass" only in
+# passing (e.g. describing the labour force, not the engineer being hired).
+_SCHOOL_LEVEL = 1
+
+
+def extract_education_requirement(text: str) -> int:
+    """
+    Detect the MINIMUM education level a job description asks for (0-5).
+
+    A resume is read for the candidate's *highest* qualification; a job
+    description has to be read for its *lowest* — the bar the candidate must
+    clear. "Bachelor's degree required, Master's preferred" sets the bar at
+    bachelor, so taking the maximum (as `extract_education` does) would mark
+    every non-master candidate as falling short of a requirement that was never
+    made.
+
+    Returns 0 when the JD states no qualification at all, which the scorer
+    treats as "no bar stated".
+    """
+    if not text:
+        return 0
+
+    text_lower = text.lower()
+    found = {score for kw, score in EDUCATION_KEYWORDS.items() if kw in text_lower}
+    if not found:
+        return 0
+
+    above_school = {s for s in found if s > _SCHOOL_LEVEL}
+    return min(above_school) if above_school else min(found)
+
+
 # ─────────────────────────────────────────────
 # LOCATION EXTRACTION
 # ─────────────────────────────────────────────
 
-# Common cities/states for quick matching
+# Common cities/states for quick matching. "remote" and the work-from-home
+# variants live here too, because a resume that says "remote" is stating a
+# location preference and the JD may be answering it.
 LOCATION_KEYWORDS = [
-    # India
-    "mumbai", "delhi", "bangalore", "bengaluru", "hyderabad", "pune", "chennai",
-    "kolkata", "ahmedabad", "jaipur", "surat", "lucknow", "noida", "gurgaon",
-    "gurugram", "chandigarh", "bhopal", "indore", "nagpur", "vadodara", "vizag",
-    "visakhapatnam", "coimbatore", "patna", "bhubaneswar", "remote",
+    # India — metros
+    "mumbai", "navi mumbai", "thane", "delhi", "new delhi", "bangalore",
+    "bengaluru", "hyderabad", "pune", "chennai", "kolkata", "ahmedabad",
+    # India — other cities we see on construction resumes
+    "jaipur", "surat", "lucknow", "noida", "gurgaon", "gurugram", "chandigarh",
+    "bhopal", "indore", "nagpur", "vadodara", "vizag", "visakhapatnam",
+    "coimbatore", "patna", "bhubaneswar", "kochi", "ernakulam", "trivandrum",
+    "thiruvananthapuram", "mysore", "mysuru", "mangalore", "nashik",
+    "aurangabad", "rajkot", "ludhiana", "kanpur", "agra", "varanasi", "ranchi",
+    "raipur", "guwahati", "dehradun", "faridabad", "ghaziabad", "goa", "panaji",
+    "madurai", "salem", "vijayawada", "guntur", "warangal", "jodhpur",
+    "udaipur", "kota", "gwalior", "jabalpur", "amritsar", "jalandhar",
+    "jamshedpur", "dhanbad", "meerut", "srinagar", "jammu", "shimla",
     # USA
     "new york", "san francisco", "los angeles", "chicago", "seattle", "austin",
     "boston", "dallas", "miami", "denver", "atlanta", "washington",
     # Global
-    "london", "toronto", "dubai", "singapore", "sydney", "berlin", "paris",
-    "remote", "work from home", "wfh"
+    "london", "toronto", "dubai", "abu dhabi", "doha", "riyadh", "muscat",
+    "singapore", "sydney", "berlin", "paris",
+    # Not a city, but a location answer all the same
+    "remote", "work from home", "wfh",
 ]
+
+# Word-boundary patterns, letters only on each side. Plain substring matching
+# produced false hits: "working remotely from Jaipur" matched "remote", and any
+# city sitting inside a longer word (a surname like Agrawal, a college name)
+# matched too. Digits are deliberately NOT treated as a boundary so a pincode
+# run together with the city ("Pune411001") still matches.
+_LOCATION_RE = {
+    loc: re.compile(r'(?<![a-z])' + re.escape(loc) + r'(?![a-z])')
+    for loc in LOCATION_KEYWORDS
+}
 
 
 def extract_location(text: str) -> Optional[str]:
     """
-    Extract first recognizable location from text.
-    Returns the city/location string or None.
+    Return the location mentioned EARLIEST in the text.
+
+    Every keyword is searched and the winner is the one with the lowest
+    position — not the one that happens to sit first in LOCATION_KEYWORDS.
+    The old list-order scan was badly wrong in ordinary cases: a resume headed
+    "Pune, Maharashtra" that later mentioned a previous posting in Mumbai came
+    back as Mumbai, because "mumbai" is earlier in the list. On a Pune vacancy
+    that scored the candidate 0 for location — 15% of the total — despite the
+    candidate living in Pune.
+
+    Earliest-in-text is the right rule because a resume states its own city in
+    the header and a JD states the posting near the top; later mentions are
+    almost always previous employers or nice-to-haves.
+
+    Ties at the same start index are broken by the longer keyword, so
+    "Navi Mumbai" beats the "Mumbai" sitting inside it.
     """
+    if not text:
+        return None
+
     text_lower = text.lower()
+    best_pos: Optional[int] = None
+    best_loc: Optional[str] = None
+
     for loc in LOCATION_KEYWORDS:
-        if loc in text_lower:
-            return loc.title()
-    return None
+        match = _LOCATION_RE[loc].search(text_lower)
+        if not match:
+            continue
+        pos = match.start()
+        if best_pos is None or pos < best_pos or (pos == best_pos and len(loc) > len(best_loc)):
+            best_pos, best_loc = pos, loc
+
+    return best_loc.title() if best_loc else None
 
 
 # ─────────────────────────────────────────────
