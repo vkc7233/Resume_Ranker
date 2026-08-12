@@ -10,6 +10,9 @@ import pandas as pd
 import numpy as np
 import time
 import math
+import json
+import re
+from pathlib import Path
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -569,6 +572,76 @@ st.markdown("""
     .cbar-track { height: 8px; background: #eef2f7; border-radius: 99px; overflow: hidden; }
     .cbar-track i { display: block; height: 100%; border-radius: 99px; transition: width .5s ease; }
 
+    /* Sign-up panel */
+    .or-rule {
+        display: flex; align-items: center; text-align: center;
+        color: #94a3b8; font-size: 0.78rem; margin: 0.9rem 0 0.6rem;
+    }
+    .or-rule::before, .or-rule::after {
+        content: ""; flex: 1; height: 1px; background: var(--line);
+    }
+    .or-rule span { padding: 0 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* Google's mark, drawn in CSS so the button needs no network fetch — this app
+       makes no outbound calls and a remotely hosted logo would break that promise. */
+    .st-key-google_signup button [data-testid="stMarkdownContainer"] p::before {
+        content: ""; display: inline-block; width: 16px; height: 16px;
+        margin-right: 0.6rem; vertical-align: -3px;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath fill='%23EA4335' d='M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z'/%3E%3Cpath fill='%234285F4' d='M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z'/%3E%3Cpath fill='%23FBBC05' d='M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.28-3.14.76-4.59l-7.97-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z'/%3E%3Cpath fill='%2334A853' d='M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z'/%3E%3C/svg%3E") no-repeat center / contain;
+    }
+    .st-key-google_signup button { font-weight: 600 !important; }
+
+    .plan-card {
+        border: 1px solid #bfdbfe; border-radius: 16px; padding: 1.4rem 1.5rem;
+        background: linear-gradient(160deg, #f8fbff 0%, #eff6ff 100%);
+    }
+    .plan-badge {
+        display: inline-block; background: #1d4ed8; color: #fff; font-size: 0.68rem;
+        font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+        padding: 0.22rem 0.6rem; border-radius: 99px; margin-bottom: 0.7rem;
+    }
+    .plan-price { font-size: 2.1rem; font-weight: 800; color: var(--ink); line-height: 1; }
+    .plan-price span {
+        font-size: 0.8rem; font-weight: 500; color: var(--muted); margin-left: 0.4rem;
+    }
+    .plan-list { margin: 1rem 0 0; padding-left: 1.05rem; }
+    .plan-list li { font-size: 0.85rem; color: #334155; line-height: 1.9; }
+    .plan-note {
+        margin-top: 1rem; padding-top: 0.85rem; border-top: 1px dashed #bfdbfe;
+        font-size: 0.78rem; color: var(--muted); line-height: 1.6;
+    }
+
+    /* Signed-in chip */
+    .acct {
+        display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.9rem;
+        border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 12px;
+        font-size: 0.82rem; color: #166534; margin-bottom: 0.9rem;
+    }
+    .acct .av {
+        width: 26px; height: 26px; border-radius: 99px; background: #16a34a; color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 0.78rem; flex: 0 0 auto;
+    }
+    .acct b { color: #14532d; }
+    .acct .pill {
+        margin-left: auto; background: #dcfce7; border-radius: 99px;
+        padding: 0.12rem 0.55rem; font-size: 0.7rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    /* Locked-state teaser */
+    .lockbox {
+        border: 1px dashed #fbbf24; background: #fffbeb; border-radius: 14px;
+        padding: 1rem 1.2rem; margin: 0.6rem 0 0.2rem;
+    }
+    /* A div, not an <h5> — Streamlit hangs a link-anchor icon off every heading it
+       renders, which looks like a stray glyph in the middle of a banner. */
+    .lockbox b.lb-h {
+        display: block; margin: 0 0 0.3rem; font-size: 0.95rem;
+        color: #92400e; font-weight: 700;
+    }
+    .lockbox p { margin: 0; font-size: 0.84rem; color: #a16207; line-height: 1.6; }
+
     /* Batch capacity meter */
     .meter {
         border: 1px solid var(--line); background: #fff; border-radius: 12px;
@@ -853,16 +926,17 @@ def skill_demand_html(ranked: list, jd_skills: list, limit: int = 12) -> str:
     return f'<div class="dem-wrap">{"".join(rows)}</div>'
 
 
-def batch_meter_html(count: int) -> str:
+def batch_meter_html(count: int, cap: int | None = None) -> str:
     """How much of the per-batch allowance the current selection uses."""
-    pct  = min(100.0, count / MAX_BATCH * 100)
+    cap  = cap or MAX_BATCH
+    pct  = min(100.0, count / cap * 100)
     hue  = "#16a34a" if pct < 75 else ("#f59e0b" if pct < 100 else "#ef4444")
     return (
         '<div class="meter">'
         f'<div class="meter-top"><span>Batch capacity</span>'
-        f'<b>{count} / {MAX_BATCH} CVs</b></div>'
+        f'<b>{count} / {cap} CVs</b></div>'
         f'<div class="meter-track"><i style="width:{pct:.1f}%;background:{hue}"></i></div>'
-        f'<div class="meter-sub">Room for {max(0, MAX_BATCH - count)} more in this run.</div>'
+        f'<div class="meter-sub">Room for {max(0, cap - count)} more in this run.</div>'
         '</div>'
     )
 
@@ -943,8 +1017,50 @@ CAND_TAB = "Check my CV"       # candidate: one CV, scored against one role
 
 MAX_BATCH = 100
 
+# The free tier exists to make "Try for free" mean something, not to lock anyone out —
+# there is a "continue without an account" escape on the sign-up panel.
+FREE_BATCH = 10
+
+# There is no server behind this app, so an "account" is a row in a local JSON file. It
+# records who is using the tool on this machine; it authenticates nothing and is not a
+# credential store. Passwords are deliberately never asked for or held.
+ACCOUNT_FILE = Path(__file__).with_name(".rr_account.json")
+
+
+def load_account() -> dict | None:
+    try:
+        if ACCOUNT_FILE.exists():
+            data = json.loads(ACCOUNT_FILE.read_text(encoding="utf-8"))
+            return data if data.get("email") else None
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def save_account(email: str, org: str = "") -> dict:
+    acct = {
+        "email":      email.strip(),
+        "org":        org.strip(),
+        "plan":       "Free trial",
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    try:
+        ACCOUNT_FILE.write_text(json.dumps(acct, indent=2), encoding="utf-8")
+    except OSError:
+        pass          # a read-only install still gets the session-level account
+    return acct
+
+
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$")
+
 if "page" not in st.session_state:
     st.session_state.page = "Home"
+
+# Loaded once per session; the file makes it survive a restart.
+if "account" not in st.session_state:
+    st.session_state.account = load_account()
+st.session_state.setdefault("show_signup", False)
+st.session_state.setdefault("guest_mode", False)
 
 # Streamlit discards the state of any widget that was not rendered during a run, so a
 # half-finished screening setup would vanish the moment the reader opens another tab.
@@ -962,6 +1078,22 @@ for _key, _default in (
 
 def go(page: str) -> None:
     st.session_state.page = page
+
+
+def open_signup() -> None:
+    st.session_state.show_signup = True
+    st.session_state.page = CTA_TAB
+
+
+def start_guest() -> None:
+    st.session_state.guest_mode  = True
+    st.session_state.show_signup = False
+    st.session_state.page = CTA_TAB
+
+
+def batch_limit() -> int:
+    """Signed-in desks get the full batch; everyone else gets the trial size."""
+    return MAX_BATCH if st.session_state.get("account") else FREE_BATCH
 
 
 # Buttons rather than <a href="#..."> links: an anchor would reload the browser and
@@ -991,13 +1123,93 @@ with _nav[8]:
         type=("primary" if st.session_state.page == CAND_TAB else "secondary"),
     )
 with _nav[9]:
-    st.button(
-        f"🚀 {CTA_TAB}", key="nav_cta", use_container_width=True,
-        on_click=go, args=(CTA_TAB,),
-        type=("primary" if st.session_state.page == CTA_TAB else "secondary"),
-    )
+    # Until there is an account, the nav's end cap is the trial offer rather than the
+    # screening page — it is the one button visible from every tab.
+    if st.session_state.get("account"):
+        st.button(
+            f"🚀 {CTA_TAB}", key="nav_cta", use_container_width=True,
+            on_click=go, args=(CTA_TAB,),
+            type=("primary" if st.session_state.page == CTA_TAB else "secondary"),
+        )
+    else:
+        st.button(
+            "✨ Try for free", key="nav_cta", use_container_width=True,
+            on_click=open_signup, type="primary",
+        )
 
 PAGE = st.session_state.page
+
+
+def render_signup() -> None:
+    """
+    The sign-up panel. Passwordless on purpose: this app has no server to check a
+    password against, and a password box with nothing behind it would collect real
+    credentials into a local file. Email identifies the desk; it grants no access
+    that "continue without an account" does not also grant.
+    """
+    st.markdown('<div class="section-title">Start your free trial</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-sub">No card, no licence key. The full '
+        f'{MAX_BATCH}-CV batch, unlocked on this machine.</div>',
+        unsafe_allow_html=True,
+    )
+
+    left, right = st.columns([1.25, 1], gap="large")
+    with left:
+        with st.form("signup_form", clear_on_submit=False):
+            email = st.text_input(
+                "Work email", placeholder="you@company.com",
+                help="Stored only in a file beside the app, so the trial is remembered "
+                     "after a restart. It is not sent anywhere.",
+            )
+            org = st.text_input("Company (optional)", placeholder="e.g. Sangath Constructions")
+            agreed = st.checkbox("I agree to the terms of use and the privacy note")
+            submitted = st.form_submit_button(
+                "Create my free account", use_container_width=True, type="primary")
+
+        if submitted:
+            if not EMAIL_RE.match(email or ""):
+                st.error("That does not look like an email address — check for a typo.")
+            elif not agreed:
+                st.warning("Tick the terms box to continue.")
+            else:
+                st.session_state.account     = save_account(email, org)
+                st.session_state.show_signup = False
+                st.success(f"Welcome, {email}. The full {MAX_BATCH}-CV batch is unlocked.")
+                st.rerun()
+
+        st.markdown('<div class="or-rule"><span>or</span></div>', unsafe_allow_html=True)
+        if st.button("Continue with Google", key="google_signup", use_container_width=True):
+            st.info(
+                "**Google sign-in is not wired up.** It needs an OAuth client ID and "
+                "secret from the Google Cloud console, plus a server to receive the "
+                "redirect — this app deliberately has neither, so nothing leaves your "
+                "machine. The button is here so the flow is ready when you add a backend."
+            )
+        st.caption(
+            "Prefer not to register? The tool works without an account — "
+            f"batches are limited to {FREE_BATCH} CVs."
+        )
+        st.button("Continue without an account", key="guest_btn",
+                  use_container_width=True, on_click=start_guest)
+
+    with right:
+        st.markdown(f"""
+<div class="plan-card">
+  <div class="plan-badge">Free trial</div>
+  <div class="plan-price">₹0<span>/ forever on this machine</span></div>
+  <ul class="plan-list">
+    <li><b>{MAX_BATCH} CVs</b> per batch instead of {FREE_BATCH}</li>
+    <li>Ranked shortlist with a written verdict per candidate</li>
+    <li>Score breakdown, shortlist mix and skill-demand charts</li>
+    <li>CSV export of the shortlist</li>
+    <li>Unlimited candidate CV checks</li>
+  </ul>
+  <div class="plan-note">🔒 No card. No licence server. Your CVs and this email
+     stay on this computer — the app makes no outbound calls.</div>
+</div>
+""", unsafe_allow_html=True)
+
 
 HERO_HTML = """
 <span class="anchor" id="top"></span>
@@ -1054,11 +1266,18 @@ if PAGE == "Home":
 
     h1, h2, _sp = st.columns([1.15, 1.15, 3])
     with h1:
-        st.button("🚀 Screen resumes now", key="hero_cta", use_container_width=True,
-                  type="primary", on_click=go, args=(CTA_TAB,))
+        if st.session_state.get("account"):
+            st.button("🚀 Screen resumes now", key="hero_cta", use_container_width=True,
+                      type="primary", on_click=go, args=(CTA_TAB,))
+        else:
+            st.button("✨ Try for free", key="hero_cta", use_container_width=True,
+                      type="primary", on_click=open_signup)
     with h2:
         st.button("See how it works", key="hero_how", use_container_width=True,
                   on_click=go, args=("How it works",))
+    if not st.session_state.get("account"):
+        st.caption(f"No card needed · unlocks the full {MAX_BATCH}-CV batch · "
+                   "nothing leaves this machine")
 
     # ── Audience split — the two sides of the same engine
     st.markdown('<div class="section-title">Which side of the desk are you on?</div>',
@@ -1084,8 +1303,12 @@ if PAGE == "Home":
   </ul>
 </div>
 """, unsafe_allow_html=True)
-        st.button(f"🚀 {CTA_TAB}", key="aud_rec", use_container_width=True,
-                  type="primary", on_click=go, args=(CTA_TAB,))
+        if st.session_state.get("account"):
+            st.button(f"🚀 {CTA_TAB}", key="aud_rec", use_container_width=True,
+                      type="primary", on_click=go, args=(CTA_TAB,))
+        else:
+            st.button("✨ Try for free", key="aud_rec", use_container_width=True,
+                      type="primary", on_click=open_signup)
     with b_col:
         st.markdown("""
 <div class="aud aud-c">
@@ -1536,11 +1759,22 @@ if PAGE == CAND_TAB:
 
 jd_text        = ""
 uploaded_files = []
+batch_files    = []
 min_score      = 0
 show_raw_text  = False
 show_breakdown = True
 
-if PAGE == CTA_TAB:
+# The sign-up panel replaces the screening page rather than sitting on top of it. A
+# half-visible upload form behind a registration wall reads as broken rather than optional,
+# and there is a "continue without an account" button on the panel itself.
+SIGNUP_GATE = (PAGE == CTA_TAB
+               and st.session_state.get("show_signup")
+               and not st.session_state.get("account"))
+
+if SIGNUP_GATE:
+    render_signup()
+
+if PAGE == CTA_TAB and not SIGNUP_GATE:
     st.markdown(
         '<span class="anchor" id="upload"></span>'
         '<div class="section-title">Start screening</div>',
@@ -1551,6 +1785,38 @@ if PAGE == CTA_TAB:
         'describe the role, set your filters, drop in the CVs, and rank.</div>',
         unsafe_allow_html=True,
     )
+
+    # Who is at the desk, and what that buys them.
+    _acct = st.session_state.get("account")
+    if _acct:
+        _mail = _acct.get("email", "")
+        _chip, _out = st.columns([3.2, 1])
+        with _chip:
+            st.markdown(
+                f'<div class="acct"><span class="av">{(_mail[:1] or "?").upper()}</span>'
+                f'<span class="who">{_mail}'
+                f'{(" · " + _acct["org"]) if _acct.get("org") else ""}</span>'
+                f'<span class="pill">{_acct.get("plan", "Free trial")} · '
+                f'{MAX_BATCH} CVs / batch</span></div>',
+                unsafe_allow_html=True,
+            )
+        with _out:
+            # Shared machines are normal on a hiring desk, so the account has to be
+            # removable without hunting for the JSON file.
+            if st.button("Sign out", key="signout_btn", use_container_width=True):
+                st.session_state.account = None
+                ACCOUNT_FILE.unlink(missing_ok=True)
+                st.rerun()
+    else:
+        st.markdown(
+            '<div class="lockbox">'
+            f'<b class="lb-h">🔓 You are screening as a guest — {FREE_BATCH} CVs per batch</b>'
+            f'<p>Everything works; only the batch size is trimmed. A free account lifts it to '
+            f'{MAX_BATCH} CVs in one run. No card, no licence server, nothing leaves this '
+            'machine.</p></div>',
+            unsafe_allow_html=True,
+        )
+        st.button("✨ Try for free", key="gate_cta", type="primary", on_click=open_signup)
 
     # ── Step 1 — job description
     st.markdown('<div class="section-title">1 · Job description</div>', unsafe_allow_html=True)
@@ -1617,12 +1883,13 @@ if PAGE == CTA_TAB:
 
     # ── Step 3 — upload
     st.markdown('<div class="section-title">3 · Upload resumes</div>', unsafe_allow_html=True)
-    st.caption(f"PDF or DOCX · up to **{MAX_BATCH} CVs** in one batch · nothing leaves this machine")
+    CAP = batch_limit()
+    st.caption(f"PDF or DOCX · up to **{CAP} CVs** in one batch · nothing leaves this machine")
     uploaded_files = st.file_uploader(
-        f"Upload PDF or DOCX resumes (up to {MAX_BATCH} files)",
+        f"Upload PDF or DOCX resumes (up to {CAP} files)",
         type=["pdf", "docx"],
         accept_multiple_files=True,
-        help=f"Select up to {MAX_BATCH} files at once using Shift+Click or Ctrl+Click",
+        help=f"Select up to {CAP} files at once using Shift+Click or Ctrl+Click",
         label_visibility="collapsed",
     )
 
@@ -1633,8 +1900,8 @@ if PAGE == CTA_TAB:
 
         # The cap is enforced here rather than at parse time so the reader is told which
         # CVs were dropped before they commit to a run, not after waiting through one.
-        batch_files = valid[:MAX_BATCH]
-        overflow    = valid[MAX_BATCH:]
+        batch_files = valid[:CAP]
+        overflow    = valid[CAP:]
 
         if invalid:
             st.warning(
@@ -1643,13 +1910,19 @@ if PAGE == CTA_TAB:
             )
         if overflow:
             st.error(
-                f"🚫 **Batch limit reached.** The first {MAX_BATCH} CVs are queued; "
+                f"🚫 **Batch limit reached.** The first {CAP} CVs are queued; "
                 f"{len(overflow)} were left out — screen those in a second batch."
             )
+            # Guests hit this wall for a reason they can fix in one click; account holders
+            # have hit the real ceiling, so pitching an upgrade at them would be nonsense.
+            if not st.session_state.get("account"):
+                st.info(f"A free account raises this batch from {FREE_BATCH} to {MAX_BATCH} CVs.")
+                st.button("✨ Try for free", key="overflow_cta", type="primary",
+                          on_click=open_signup)
 
         if batch_files:
             st.success(f"✅ {len(batch_files)} valid resume(s) queued")
-            st.markdown(batch_meter_html(len(batch_files)), unsafe_allow_html=True)
+            st.markdown(batch_meter_html(len(batch_files), CAP), unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────
@@ -1955,10 +2228,10 @@ if PAGE == CTA_TAB and jd_text.strip() and (uploaded_files or st.session_state.g
                 use_container_width=True,
             )
 
-elif PAGE == CTA_TAB and not jd_text.strip():
+elif PAGE == CTA_TAB and not SIGNUP_GATE and not jd_text.strip():
     st.warning("☝️ Paste a job description in step 1 to begin.")
 
-elif PAGE == CTA_TAB:
+elif PAGE == CTA_TAB and not SIGNUP_GATE:
     st.info("☝️ **Ready when you are** — upload one or more resumes above to see the ranking.")
 
 
@@ -2234,7 +2507,7 @@ if PAGE == "Pricing":
         'and no candidate data held by anyone else.</div>',
         unsafe_allow_html=True,
     )
-    st.markdown("""
+    st.markdown(f"""
 <div class="price-grid">
   <div class="price-card">
     <h4>Starter</h4>
@@ -2242,7 +2515,7 @@ if PAGE == "Pricing":
     <p class="p-desc">For a single recruiter testing the tool on a live vacancy.</p>
     <ul class="price-list">
       <li>1 seat, 1 machine</li>
-      <li>Up to 25 resumes per batch</li>
+      <li>Up to {MAX_BATCH} resumes per batch</li>
       <li>All scoring signals</li>
       <li>CSV export</li>
       <li class="no">Custom skill database</li>
@@ -2282,10 +2555,17 @@ if PAGE == "Pricing":
         "Figures shown are placeholders — set your actual plans and prices in `app.py` "
         "before sharing this page with customers."
     )
-    pc1, _pc2 = st.columns([1.3, 3])
+    pc1, pc2, _pc3 = st.columns([1.3, 1.3, 2])
     with pc1:
+        if st.session_state.get("account"):
+            st.button("🚀 Start screening", key="price_try", use_container_width=True,
+                      type="primary", on_click=go, args=(CTA_TAB,))
+        else:
+            st.button("✨ Try for free", key="price_try", use_container_width=True,
+                      type="primary", on_click=open_signup)
+    with pc2:
         st.button("Talk to us", key="price_cta", use_container_width=True,
-                  type="primary", on_click=go, args=("Contact",))
+                  on_click=go, args=("Contact",))
 
 
 # ─────────────────────────────────────────────
@@ -2450,7 +2730,9 @@ components.html(
         const TAB_BUTTONS = [
             '[class*="st-key-nav_"]', '.st-key-hero_cta', '.st-key-hero_how',
             '.st-key-home_bottom_cta', '.st-key-how_cta', '.st-key-faq_cta',
-            '.st-key-price_cta', '.st-key-aud_rec', '.st-key-aud_cand'
+            '.st-key-price_cta', '.st-key-price_try', '.st-key-aud_rec',
+            '.st-key-aud_cand', '.st-key-gate_cta', '.st-key-overflow_cta',
+            '.st-key-guest_btn'
         ].join(',');
 
         // Streamlit restores the previous scroll offset once the rerun paints, which

@@ -6,3 +6,6 @@ venv/
 
 # Large local screen recordings — kept on disk, not in the repo
 *.mp4
+
+# Local per-machine account record written by the free-trial sign-up
+.rr_account.json
