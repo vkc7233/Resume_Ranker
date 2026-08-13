@@ -12,3 +12,8 @@ font = "sans serif"
 
 [client]
 toolbarMode = "minimal"
+
+# Serves static/styles.css at app/static/styles.css so the stylesheet is fetched
+# and cached once by the browser, instead of being re-sent on every rerun.
+[server]
+enableStaticServing = true
